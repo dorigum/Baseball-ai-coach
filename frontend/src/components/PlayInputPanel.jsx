@@ -489,7 +489,7 @@ const PlayInputPanel = ({
       <button
         type="button"
         onClick={onTriggerAiAnalysis}
-        className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-2.5 px-4 rounded-xl border border-indigo-400/20 shadow-md hover:shadow-indigo-500/10 active:scale-[0.99] transition-all duration-150 text-xs flex items-center justify-center gap-2 mt-1"
+        className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-3 px-4 rounded-xl border border-indigo-400/20 shadow-md hover:shadow-indigo-500/10 active:scale-[0.99] transition-all duration-150 text-sm flex items-center justify-center gap-2 mt-1"
       >
         🔮 AI 실시간 전술 분석 실행
       </button>
