@@ -353,24 +353,58 @@ const PlayInputPanel = ({
       <div className="flex flex-col gap-3">
         <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider">Pitch Type (구종)</label>
         <div className="grid grid-cols-3 gap-2">
-          {pitchTypes.map((p) => {
-            const isSelected = pitchInfo.pitchType === p.value;
-            return (
-              <button
-                key={p.value}
-                type="button"
-                className={`py-2 px-3 rounded-xl border text-xs font-bold transition-all duration-200 ${
-                  isSelected 
-                    ? 'border-emerald-400 bg-emerald-500/30 text-white shadow-[0_0_12px_rgba(16,185,129,0.3)]' 
-                    : `${p.color} border-white/5`
-                }`}
-                onClick={() => handleInputChange('pitchType', p.value)}
-              >
-                {p.label.split(' ')[0]}
-              </button>
-            );
-          })}
+          {(() => {
+            const standardTypes = ['Fastball', 'Slider', 'Curve', 'Changeup', 'Splitter', 'Cutter'];
+            const isCustomSelected = pitchInfo.pitchType && !standardTypes.includes(pitchInfo.pitchType);
+            const pitchTypesExtended = [
+              ...pitchTypes,
+              { label: '기타 (직접 입력)', value: 'Etc', color: 'bg-slate-500/20 text-slate-400 border-slate-500/40 hover:bg-slate-500/30' }
+            ];
+
+            return pitchTypesExtended.map((p) => {
+              const isSelected = p.value === 'Etc' 
+                ? isCustomSelected 
+                : pitchInfo.pitchType === p.value;
+
+              return (
+                <button
+                  key={p.value}
+                  type="button"
+                  className={`py-2 px-3 rounded-xl border text-xs font-bold transition-all duration-200 ${
+                    isSelected 
+                      ? 'border-emerald-400 bg-emerald-500/30 text-white shadow-[0_0_12px_rgba(16,185,129,0.3)]' 
+                      : `${p.color} border-white/5`
+                  }`}
+                  onClick={() => {
+                    if (p.value === 'Etc') {
+                      handleInputChange('pitchType', '기타');
+                    } else {
+                      handleInputChange('pitchType', p.value);
+                    }
+                  }}
+                >
+                  {p.label.split(' ')[0]}
+                </button>
+              );
+            });
+          })()}
         </div>
+
+        {/* 기타 구종 직접 입력 인풋 */}
+        {(() => {
+          const standardTypes = ['Fastball', 'Slider', 'Curve', 'Changeup', 'Splitter', 'Cutter'];
+          const isCustomPitchType = pitchInfo.pitchType && !standardTypes.includes(pitchInfo.pitchType);
+          
+          return isCustomPitchType && (
+            <input
+              type="text"
+              className="w-full bg-slate-950/80 border border-emerald-500/30 rounded-xl px-3 py-2 text-white placeholder-slate-600 focus:outline-none focus:border-emerald-500 text-xs font-semibold mt-1 animate-fade-in"
+              placeholder="기타 구종 이름을 직접 입력하세요 (예: 포크볼, 싱커, 투심, 너클볼)"
+              value={pitchInfo.pitchType === '기타' ? '' : pitchInfo.pitchType}
+              onChange={(e) => handleInputChange('pitchType', e.target.value || '기타')}
+            />
+          );
+        })()}
 
         <div className="mt-2">
           <div className="flex justify-between text-xs font-semibold text-slate-400 mb-1">
