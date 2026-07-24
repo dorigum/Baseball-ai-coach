@@ -8,9 +8,12 @@ import com.baseball.ai.coach.service.CoachService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.ai.retry.NonTransientAiException;
+import org.springframework.ai.retry.TransientAiException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.client.RestClientException;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -50,7 +53,8 @@ public class CoachController {
     }
 
     /**
-     * [NEW] Gemini API 연동 실시간 야구 전술 조언 획득 API (입력값 유효성 검증 및 예외 처리 강화)
+     * [NEW] Gemini API 연동 실시간 야구 전술 조언 획득 API
+     * (입력값 유효성 검증 적용 및 예상치 못한 내부 런타임 에러는 500 상태코드로 분리)
      */
     @PostMapping("/advice")
     public ResponseEntity<Map<String, String>> getTacticalAdvice(@Valid @RequestBody AdviceRequestDto requestDto) {
@@ -61,8 +65,9 @@ public class CoachController {
             response.put("advice", advice);
             
             return ResponseEntity.ok(response);
-        } catch (Exception e) {
-            log.error("AI Advice generation failed for request: {}", requestDto, e);
+        } catch (TransientAiException | NonTransientAiException | RestClientException e) {
+            // AI 공급자 관련 서비스 불가 상황 및 네트워크 장애 예외만 503으로 처리
+            log.error("AI service is temporarily unavailable for request: {}", requestDto, e);
             
             Map<String, String> errorResponse = new HashMap<>();
             errorResponse.put("error", "AI service is temporarily unavailable");
