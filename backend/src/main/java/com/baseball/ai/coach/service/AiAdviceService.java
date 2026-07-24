@@ -68,11 +68,7 @@ public class AiAdviceService {
 
         Prompt prompt = new Prompt(List.of(systemMsg, userMsg));
         
-        try {
-            return chatModel.call(prompt).getResult().getOutput().getContent();
-        } catch (Exception e) {
-            return "⚠️ AI 실시간 연동 중 일시적인 오류가 발생했습니다.\n(상세 원인: " + e.getMessage() + ")\n잠시 후 다시 시도하거나 API Key 바인딩을 확인하십시오.";
-        }
+        return chatModel.call(prompt).getResult().getOutput().getContent();
     }
 
     private String formatRunners(AdviceRequestDto dto) {

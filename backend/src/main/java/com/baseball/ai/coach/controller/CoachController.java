@@ -5,7 +5,9 @@ import com.baseball.ai.coach.dto.DashboardResponseDto;
 import com.baseball.ai.coach.dto.PitchRecordRequestDto;
 import com.baseball.ai.coach.service.AiAdviceService;
 import com.baseball.ai.coach.service.CoachService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -17,6 +19,7 @@ import java.util.Map;
 @RequestMapping("/api/coach")
 @RequiredArgsConstructor
 @CrossOrigin(origins = "*") // 로컬 개발(Port 5173)과 백엔드(Port 8080) 통신 시 CORS 에러 방지
+@Slf4j
 public class CoachController {
 
     private final CoachService coachService;
@@ -47,15 +50,25 @@ public class CoachController {
     }
 
     /**
-     * [NEW] Gemini API 연동 실시간 야구 전술 조언 획득 API
+     * [NEW] Gemini API 연동 실시간 야구 전술 조언 획득 API (입력값 유효성 검증 및 예외 처리 강화)
      */
     @PostMapping("/advice")
-    public ResponseEntity<Map<String, String>> getTacticalAdvice(@RequestBody AdviceRequestDto requestDto) {
-        String advice = aiAdviceService.generateTacticalAdvice(requestDto);
-        
-        Map<String, String> response = new HashMap<>();
-        response.put("advice", advice);
-        
-        return ResponseEntity.ok(response);
+    public ResponseEntity<Map<String, String>> getTacticalAdvice(@Valid @RequestBody AdviceRequestDto requestDto) {
+        try {
+            String advice = aiAdviceService.generateTacticalAdvice(requestDto);
+            
+            Map<String, String> response = new HashMap<>();
+            response.put("advice", advice);
+            
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            log.error("AI Advice generation failed for request: {}", requestDto, e);
+            
+            Map<String, String> errorResponse = new HashMap<>();
+            errorResponse.put("error", "AI service is temporarily unavailable");
+            errorResponse.put("details", "Gemini API 호출에 실패하였습니다.");
+            
+            return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body(errorResponse);
+        }
     }
 }

@@ -21,7 +21,7 @@ configurations {
 
 // Spring AI 버전 명세 (Gemini API를 정식 지원하는 마일스톤 버전 지정)
 ext {
-    set('springAiVersion', "1.0.0-M1")
+    set('springAiVersion', "1.1.0-M1")
 }
 
 repositories {

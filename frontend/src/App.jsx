@@ -506,6 +506,20 @@ function App() {
   useEffect(() => {
     const shift = getShiftType();
 
+    // 공통 로컬 백업 룰 폴백 조언 생성기
+    const triggerLocalFallback = () => {
+      const stadiumName = gameInfo.stadium;
+      let localAdvice = `🏟️ [로컬 백업 엔진 조언] 현재 카운트(${count.balls}B-${count.strikes}S, ${count.outs}O, 주자 ${runners.first ? '1' : ''}${runners.second ? '2' : ''}${runners.third ? '3' : '없음'}루) 상황입니다.\n`;
+      if (stadiumName.includes('잠실')) {
+        localAdvice += '👉 국내 최대 규모인 잠실구장의 광활한 외야를 활용하십시오. 투수는 장타 부담 없이 한가운데 스트라이크존 공략을 높이고, 외야진은 플라이볼 맞춰잡기 형태로 전술 수비 간격을 유지하는 것이 정석입니다.';
+      } else if (stadiumName.includes('인천')) {
+        localAdvice += '👉 인천 문학구장은 홈런 펜스가 극도로 가까워 장타 확률이 비약적으로 높습니다. 투수는 종무브먼트 구종(스플리터, 체인지업)으로 철저히 가라앉히는 로우존 투구를 지시하고, 내야진은 땅볼 수비 병살에 대비해야 합니다.';
+      } else {
+        localAdvice += '👉 표준 경기장 포메이션을 고려하십시오. 초구 스트라이크 선점으로 볼카운트 주도권을 쥐고, 주자 진루를 막는 안전형 기본 시프트 대형을 유지할 것을 권장합니다.';
+      }
+      setAiAdvice(localAdvice);
+    };
+
     const fetchAdvice = async () => {
       try {
         const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080';
@@ -539,20 +553,12 @@ function App() {
           const data = await response.json();
           setAiAdvice(data.advice);
         } else {
-          setAiAdvice('⚠️ AI 전술 조언을 가져오는 데 실패했습니다. 백엔드 상태를 점검하십시오.');
+          // non-2xx 응답 발생 시에도 동일한 폴백 엔진 적용
+          triggerLocalFallback();
         }
       } catch (err) {
-        // 백엔드 오프라인 상태일 때 자동 활성화되는 대체용 로컬 룰 엔진 로직
-        const stadiumName = gameInfo.stadium;
-        let localAdvice = `🏟️ [로컬 백업 엔진 조언] 현재 카운트(${count.balls}B-${count.strikes}S, ${count.outs}O, 주자 ${runners.first ? '1' : ''}${runners.second ? '2' : ''}${runners.third ? '3' : '없음'}루) 상황입니다.\n`;
-        if (stadiumName.includes('잠실')) {
-          localAdvice += '👉 국내 최대 규모인 잠실구장의 광활한 외야를 활용하십시오. 투수는 장타 부담 없이 한가운데 스트라이크존 공략을 높이고, 외야진은 플라이볼 맞춰잡기 형태로 전술 수비 간격을 유지하는 것이 정석입니다.';
-        } else if (stadiumName.includes('인천')) {
-          localAdvice += '👉 인천 문학구장은 홈런 펜스가 극도로 가까워 장타 확률이 비약적으로 높습니다. 투수는 종무브먼트 구종(스플리터, 체인지업)으로 철저히 가라앉히는 로우존 투구를 지시하고, 내야진은 땅볼 수비 병살에 대비해야 합니다.';
-        } else {
-          localAdvice += '👉 표준 경기장 포메이션을 고려하십시오. 초구 스트라이크 선점으로 볼카운트 주도권을 쥐고, 주자 진루를 막는 안전형 기본 시프트 대형을 유지할 것을 권장합니다.';
-        }
-        setAiAdvice(localAdvice);
+        // 네트워크 단절 및 예외 발생 시 로컬 폴백 엔진 적용
+        triggerLocalFallback();
       }
     };
 
