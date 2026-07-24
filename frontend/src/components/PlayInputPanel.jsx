@@ -11,7 +11,8 @@ const PlayInputPanel = ({
   onRunnerToggle,
   hitLocation,
   onSubmitRecord,
-  onTriggerAiAnalysis
+  onTriggerAiAnalysis,
+  showModal
 }) => {
   const stadiums = [
     { name: '잠실 (LG/두산)', desc: '⚾ 매우 넓은 외야 (홈런 억제, 우중간 깊음)' },
@@ -78,19 +79,19 @@ const PlayInputPanel = ({
 
   const handleSave = () => {
     if (!pitchInfo.pitcherName || !pitchInfo.pitcherTeam || !pitchInfo.batterName || !pitchInfo.batterTeam) {
-      alert('투수/타자 이름과 팀 정보를 모두 입력해주세요!');
+      showModal('⚠️ 입력 누락', '투수/타자 이름과 팀 정보를 모두 입력해주세요!', 'warning');
       return;
     }
     if (!pitchInfo.pitchType) {
-      alert('구종을 선택해주세요!');
+      showModal('⚠️ 입력 누락', '구종을 선택해주세요!', 'warning');
       return;
     }
     if (!pitchInfo.pitchResult) {
-      alert('투구 결과를 선택해주세요!');
+      showModal('⚠️ 입력 누락', '투구 결과를 선택해주세요!', 'warning');
       return;
     }
     if (pitchInfo.pitchResult === 'InPlay' && !pitchInfo.playResult) {
-      alert('인플레이 타구의 최종 결과를 선택해주세요!');
+      showModal('⚠️ 입력 누락', '인플레이 타구의 최종 결과를 선택해주세요!', 'warning');
       return;
     }
 
