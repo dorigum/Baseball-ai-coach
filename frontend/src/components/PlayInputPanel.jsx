@@ -10,7 +10,8 @@ const PlayInputPanel = ({
   runners,
   onRunnerToggle,
   hitLocation,
-  onSubmitRecord
+  onSubmitRecord,
+  onTriggerAiAnalysis
 }) => {
   const stadiums = [
     { name: '잠실 (LG/두산)', desc: '⚾ 매우 넓은 외야 (홈런 억제, 우중간 깊음)' },
@@ -484,11 +485,20 @@ const PlayInputPanel = ({
         </div>
       )}
 
+      {/* AI 전술 분석 실행 버튼 */}
+      <button
+        type="button"
+        onClick={onTriggerAiAnalysis}
+        className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-2.5 px-4 rounded-xl border border-indigo-400/20 shadow-md hover:shadow-indigo-500/10 active:scale-[0.99] transition-all duration-150 text-xs flex items-center justify-center gap-2 mt-1"
+      >
+        🔮 AI 실시간 전술 분석 실행
+      </button>
+
       {/* 저장 버튼 */}
       <button
         type="button"
         onClick={handleSave}
-        className="w-full mt-2 bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 text-white font-bold py-3 px-4 rounded-xl border border-emerald-400/20 shadow-lg hover:shadow-emerald-500/10 active:scale-[0.99] transition-all duration-150 text-sm flex items-center justify-center gap-2"
+        className="w-full mt-1 bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 text-white font-bold py-3 px-4 rounded-xl border border-emerald-400/20 shadow-lg hover:shadow-emerald-500/10 active:scale-[0.99] transition-all duration-150 text-sm flex items-center justify-center gap-2"
       >
         📥 투구 기록 추가 및 분석 반영
       </button>
