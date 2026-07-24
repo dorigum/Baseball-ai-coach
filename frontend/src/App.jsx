@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import BaseballField from './components/BaseballField';
 import PlayInputPanel from './components/PlayInputPanel';
 import Dashboard from './components/Dashboard';
@@ -344,6 +344,7 @@ function App() {
   const [pitchLogs, setPitchLogs] = useState(initialLogs);
   const [hitLocation, setHitLocation] = useState(null);
   const [aiAdvice, setAiAdvice] = useState('');
+  const abortControllerRef = useRef(null);
 
   // 경기 설정 상태
   const [gameInfo, setGameInfo] = useState({
@@ -502,6 +503,7 @@ function App() {
     return '기본 표준 수비 포지션';
   };
 
+  // [수정] 로컬 백업 룰 폴백 조언 생성기 (공수 상황별 분기 및 구장 특징 정합성 강화)
   const triggerLocalFallback = () => {
     const stadiumName = gameInfo.stadium;
     const activeBases = [
@@ -510,19 +512,36 @@ function App() {
       runners.third && '3루'
     ].filter(Boolean);
     const runnerLabel = activeBases.join(', ') || '없음';
+
+    const isTop = gameInfo.inningHalf === '초';
+    const attackingTeam = isTop ? gameInfo.opponentTeam : gameInfo.myTeam;
+    const isMyTeamOffense = gameInfo.myTeam === attackingTeam;
     
     let localAdvice = `🏟️ [로컬 백업 엔진 조언] 현재 카운트(${count.balls}B-${count.strikes}S, ${count.outs}O, 주자 ${runnerLabel}) 상황입니다.\n`;
-    if (stadiumName.includes('잠실')) {
-      localAdvice += '👉 국내 최대 규모인 잠실구장의 광활한 외야를 활용하십시오. 투수는 장타 부담 없이 한가운데 스트라이크존 공략을 높이고, 외야진은 플라이볼 맞춰잡기 형태로 전술 수비 간격을 유지하는 것이 정석입니다.';
-    } else if (stadiumName.includes('인천')) {
-      localAdvice += '👉 인천 문학구장은 홈런 펜스가 극도로 가까워 장타 확률이 비약적으로 높습니다. 투수는 종무브먼트 구종(스플리터, 체인지업)으로 철저히 가라앉히는 로우존 투구를 지시하고, 내야진은 땅볼 수비 병살에 대비해야 합니다.';
+    
+    if (isMyTeamOffense) {
+      // 아군(myTeam) 공격 시
+      localAdvice += `👉 [공격 전략] ${gameInfo.myTeam} 타선은 잠실구장과 같이 외야가 넓은 야구장에서는 큰 스윙보다는 정교한 컨택으로 빈 공간을 공략하는 타격이 필요합니다. `;
+      if (stadiumName.includes('인천') || stadiumName.includes('대구')) {
+        localAdvice += `특히 ${stadiumName.split(' ')[0]}구장은 홈런 펜스가 매우 가까워 장타 확률이 높으므로, 어퍼스윙을 가미한 장타 지향 타격을 적극 권장합니다.`;
+      } else {
+        localAdvice += '주자가 루상에 있으므로 무리한 타격보다는 진루타를 생산하기 위한 팀 배팅과 작전 주루에 집중해야 합니다.';
+      }
     } else {
-      localAdvice += '👉 표준 경기장 포메이션을 고려하십시오. 초구 스트라이크 선점으로 볼카운트 주도권을 쥐고, 주자 진루를 막는 안전형 기본 시프트 대형을 유지할 것을 권장합니다.';
+      // 아군(myTeam) 수비 시
+      localAdvice += `👉 [수비 전략] ${gameInfo.myTeam} 투수/수비진은 `;
+      if (stadiumName.includes('잠실')) {
+        localAdvice += '광활한 잠실구장의 특징을 활용하여 피장타 부담 없이 한가운데 스트라이크존을 높이고, 외야진은 플라이볼 맞춰잡기 형태로 넓은 전술 수비 간격을 유지해야 합니다.';
+      } else if (stadiumName.includes('인천') || stadiumName.includes('대구')) {
+        localAdvice += '피홈런 펜스가 가까우므로 종무브먼트 구종(스플리터, 체인지업)으로 가라앉히는 로우존 투구를 하고, 내야진은 땅볼 수비 병살에 대비해야 합니다.';
+      } else {
+        localAdvice += '초구 스트라이크 선점으로 볼카운트 주도권을 쥐고, 주자 진루를 차단하는 기본 수비 포메이션 유지를 권장합니다.';
+      }
     }
     setAiAdvice(localAdvice);
   };
 
-  // [NEW] 수동 AI 전술 분석 실행 함수 (입력 정합성 & 오타 정규식 검증 탑재)
+  // [NEW] 수동 AI 전술 분석 실행 함수 (입력 정합성 검증 & AbortController 탑재)
   const handleTriggerAiAnalysis = async () => {
     const isTop = gameInfo.inningHalf === '초';
     const attackingTeam = isTop ? gameInfo.opponentTeam : gameInfo.myTeam;
@@ -556,11 +575,23 @@ function App() {
       return;
     }
 
-    // 4. 구종 선택 검증
+    // 4. 구종 선택 및 기타 미입력 검증
     if (!pitchInfo.pitchType) {
       alert('⚠️ 입력 오류: 전술 분석을 시작하기 위해 구종(Pitch Type)을 먼저 선택해 주세요.');
       return;
     }
+    if (pitchInfo.pitchType === '기타' || pitchInfo.pitchType.trim() === '') {
+      alert('⚠️ 입력 오류: [기타 (직접 입력)]을 선택하셨습니다. 구종의 명칭(예: 포크볼, 싱커 등)을 직접 입력해 주세요.');
+      return;
+    }
+
+    // 이전 비동기 통신이 완료되지 않았다면 강제 취소 (레이스컨디션 원천 차단)
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
+    const signal = controller.signal;
 
     setAiAdvice('🔮 AI 실시간 전술 분석을 실행하는 중입니다...');
 
@@ -572,6 +603,7 @@ function App() {
         headers: {
           'Content-Type': 'application/json',
         },
+        signal, // AbortSignal 등록
         body: JSON.stringify({
           stadium: gameInfo.stadium,
           myTeam: gameInfo.myTeam,
@@ -597,69 +629,23 @@ function App() {
         const data = await response.json();
         setAiAdvice(data.advice);
       } else {
-        localAdvice += '👉 표준 경기장 포메이션을 고려하십시오. 초구 스트라이크 선점으로 볼카운트 주도권을 쥐고, 주자 진루를 막는 안전형 기본 시프트 대형을 유지할 것을 권장합니다.';
-      }
-      setAiAdvice(localAdvice);
-    };
-
-    const fetchAdvice = async () => {
-      try {
-        const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080';
-        const response = await fetch(`${apiBaseUrl}/api/coach/advice`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            stadium: gameInfo.stadium,
-            myTeam: gameInfo.myTeam,
-            opponentTeam: gameInfo.opponentTeam,
-            inning: gameInfo.inning,
-            inningHalf: gameInfo.inningHalf,
-            balls: count.balls,
-            strikes: count.strikes,
-            outs: count.outs,
-            firstBase: runners.first,
-            secondBase: runners.second,
-            thirdBase: runners.third,
-            pitcherName: pitchInfo.pitcherName,
-            pitcherTeam: pitchInfo.pitcherTeam,
-            batterName: pitchInfo.batterName,
-            batterTeam: pitchInfo.batterTeam,
-            pitchType: pitchInfo.pitchType,
-            shiftType: shift
-          })
-        });
-
-        if (response.ok) {
-          const data = await response.json();
-          setAiAdvice(data.advice);
-        } else {
-          // non-2xx 응답 발생 시에도 동일한 폴백 엔진 적용
-          triggerLocalFallback();
-        }
-      } catch (err) {
-        // 네트워크 단절 및 예외 발생 시 로컬 폴백 엔진 적용
         triggerLocalFallback();
       }
+    } catch (err) {
+      if (err.name !== 'AbortError') {
+        triggerLocalFallback();
+      }
+    }
+  };
+
+  // 컴포넌트 언마운트 시 이전 요청 클린업
+  useEffect(() => {
+    return () => {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
     };
-
-    const timer = setTimeout(() => {
-      fetchAdvice();
-    }, 500);
-
-    return () => clearTimeout(timer);
-  }, [
-    positions, 
-    runners, 
-    count, 
-    pitchInfo.pitcherName, 
-    pitchInfo.pitcherTeam, 
-    pitchInfo.batterName, 
-    pitchInfo.batterTeam, 
-    pitchInfo.pitchType, 
-    gameInfo
-  ]);
+  }, []);
 
   // 기록 제출 시 카운트 및 주자 시뮬레이션 업데이트
   const handleSubmitRecord = () => {
