@@ -35,8 +35,8 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-web'
     implementation 'org.springframework.boot:spring-boot-starter-validation'
     
-    // [수정] 구 버전 대신 Spring AI Google GenAI(Gemini) 공식 스타터 라이브러리로 변경
-    implementation 'org.springframework.ai:spring-ai-starter-model-google-genai'
+    // [수정] 구 버전 대신 Spring AI Google GenAI(Gemini) 공식 스타터 라이브러리로 변경 (버전 직접 기입으로 꼬임 해결)
+    implementation 'org.springframework.ai:spring-ai-starter-model-google-genai:1.1.0-M1'
     
     compileOnly 'org.projectlombok:lombok'
     annotationProcessor 'org.projectlombok:lombok'

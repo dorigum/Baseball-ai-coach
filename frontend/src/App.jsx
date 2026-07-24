@@ -690,9 +690,11 @@ function App() {
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans pb-12">
       <header className="sticky top-0 z-50 bg-slate-950/80 backdrop-blur-md border-b border-white/10 px-6 py-4 flex items-center justify-between shadow-lg">
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-lg bg-emerald-500 flex items-center justify-center font-bold text-white shadow-[0_0_15px_rgba(16,185,129,0.4)]">
-            BA
-          </div>
+          <img 
+            src="/favicon_baseball_ai.jpg" 
+            alt="Baseball AI Coach Logo" 
+            className="w-9 h-9 rounded-lg object-cover shadow-[0_0_15px_rgba(16,185,129,0.4)] border border-emerald-500/20"
+          />
           <div>
             <h1 className="text-lg font-extrabold tracking-tight text-white flex items-center gap-1.5">
               Baseball AI Coach <span className="text-[10px] bg-emerald-950 text-emerald-400 border border-emerald-500/20 px-1.5 py-0.5 rounded font-mono font-normal">v1.6-beta</span>
