@@ -1,6 +1,6 @@
 # Baseball AI Coach - 구축 완료 보고서 (프론트엔드 & 백엔드)
 
-본 프로젝트는 **Vite + React 19 + Tailwind CSS v4** 프론트엔드와 **Spring Boot 3.3.2 + Java 21 + Spring Data JPA** 백엔드 API 서버를 구축하고, 최종적으로 **Spring AI Google AI Starter + Google Gemini API (gemini-1.5-flash)** 연동을 성공적으로 완수하였습니다.
+본 프로젝트는 **Vite + React 19 + Tailwind CSS v4** 프론트엔드와 **Spring Boot 3.3.2 + Java 21 + Spring Data JPA** 백엔드 API 서버를 구축하고, 최종적으로 **Spring AI Google AI Starter + Google Gemini API (gemini-3.5-flash-lite)** 연동을 성공적으로 완수하였습니다.
 
 구장 장소와 경기 맥락(일시, 상대팀, 이닝, 카운트, 주자, 시프트)에 따른 지능적인 야구 코칭 분석 피드백 루프가 완전히 가동됩니다.
 
@@ -30,7 +30,7 @@
      - **현재 타석 강조 연동**: 현재 타석에 들어선 타자(`currentBatterName`)와 일치하는 타순의 경우, 붉은색 활성 테두리(Red Pulse)와 `AT BAT` 배지가 시각적으로 표시되어 경기 몰입도를 극대화합니다.
    - **실시간 수비 라인업 설정 패널 (Active Lineup)**:
      - 9명의 수비 포지션별 실시간 야수 명단을 관리하는 카드입니다.
-     - 각 포지션별 선수명을 클릭하면 인풋 폼으로 즉각 전환되어, 경기 도중 발생하는 **대수비 투입, 투수 교체 상황** 시 사용자가 실시간으로 선수명을 수동 편집/교체할 수 있습니다.
+     - 각 포지션별 선수명을 클릭하면 인풋 폼으로 즉각 전환되어, 경기 도중 발생하는 **대수비 투입, 투수 교체 상황** 시자가 실시간으로 선수명을 수동 편집/교체할 수 있습니다.
      - 투수(P)명을 에디터에서 수정 시, 피칭 기록 입력 패널의 투수명 정보도 자동으로 양방향 동기화 처리됩니다.
    - **Recharts Charts**: 구종 비율(PieChart), 스프레이 분포도(ScatterChart), 인플레이 아웃풋(BarChart) 및 최근 로그 테이블을 시각화합니다.
    - **AI Coach Advice Box**: 주자 상황, 카운트, 시프트 정보 및 **구장별 특징(잠실: 플라이 아웃 유도, 인천/대구: 피홈런 경계 저공 피칭 등)**에 부합하는 실시간 AI 전략 룰 피드백을 출력합니다.
@@ -39,7 +39,7 @@
    - 전체 컴포넌트의 단방향 데이터 흐름 조율 및 상태 관리.
    - **KBO 주요 구단 주전 라인업 및 타순 연계**: KBO 10개 구단 야수 명단 및 1~9번 스타팅 라인업 데이터를 기본 장착하여 `My Team` 및 `Opponent` 변경 시 툴팁 호버 정보와 투수/타자 정보가 유기적으로 자동 셋업 및 갱신되도록 개선했습니다.
    - **수비팀 선수 데이터 연계 정합성**: 야구장 SVG 필드에 표시되는 수비수 9명은 **현재 수비 중인 구단(defendingTeam)**의 선수여야 하므로, 이닝 초/말에 따른 실제 수비 구단의 라인업 데이터를 실시간 감지 매칭하여 야구장 호버 데이터와 동기화시켰습니다.
-   - **[3단계 완료] 실시간 AI 조언 비동기 Fetch 연동**:
+   - **실시간 AI 조언 비동기 Fetch 연동**:
      - 기존의 클라이언트 단 룰 기반 하드코딩엔진을 전면 제거하고, 수비 위치 드래그 및 카운트 조작 시 실시간으로 백엔드의 `/api/coach/advice` REST API를 비동기 호출하여 풍부한 Gemini AI의 전술 피드백을 수신하도록 리팩토링했습니다.
      - 과도한 API 트래픽 중복을 차단하기 위해 **500ms 디바운스(Debounce)** 타이밍 컨트롤러를 탑재했습니다.
      - 백엔드 오프라인 상태나 API Key 누락 시 자동으로 로컬 룰 백업 엔진이 작동하는 **Fallback 방어 메커니즘**을 설계하여 서비스 안정성을 다졌습니다.
@@ -61,13 +61,13 @@
 - **PlateAppearance (타석)**: 경기(Game), 투수(Player), 타자(Player)와 N:1 매핑 및 이닝, 초/말, 최종 결과 기록.
 - **PitchRecord (투구)**: 타석(PlateAppearance)과 N:1 매핑 및 투구 시퀀스, 구종, 구속, 카운트, 투구 결과 및 타구 좌표(X, Y) 보관.
 
-### 3. [3단계 완료] Spring AI + Google Gemini API 연동 아키텍처
+### 3. Spring AI + Google Gemini API 연동 아키텍처
 - **Spring AI Google AI Starter 도입**: `build.gradle`에 `spring-ai-google-ai-spring-boot-starter` 의존성 및 1.0.0-M1 BOM 추가 설정을 완수했습니다.
 - **API 키 동적 바인딩**: `application.yml`의 `spring.ai.google.api-key` 설정을 `${GEMINI_API_KEY}` 환경변수 참조 방식으로 바인딩하여, API Key 노출을 원천 차단하고 런타임 주입을 활성화했습니다.
 - **[AdviceRequestDto.java](file:///c:/PolarBear_Projects/baseball-ai-coach/backend/src/main/java/com/baseball/ai/coach/dto/AdviceRequestDto.java)**:
   - 프론트엔드로부터 구장, 대진, 이닝, 카운트(B-S-O), 주자 배치 정보, 투타 선수 정보, 구종 및 수비 시프트 종류를 수집하는 데이터 전송 개체입니다.
 - **[AiAdviceService.java](file:///c:/PolarBear_Projects/baseball-ai-coach/backend/src/main/java/com/baseball/ai/coach/service/AiAdviceService.java)**:
-  - Spring AI의 `ChatModel`을 주입받아 **구장 특성(잠실구장 외야 크기, 인천 홈런공장 특성 등) 반영 수칙, 볼카운트 및 시프트 전술 해석 수칙**을 담은 System Prompt와 경기 상황 메타 데이터를 조합한 User Prompt를 생성해 Gemini API(model: `gemini-1.5-flash`)에 전달하여 정교한 한국어 조언을 획득합니다.
+  - Spring AI의 `ChatModel`을 주입받아 **구장 특성(잠실구장 외야 크기, 인천 홈런공장 특성 등) 반영 수칙, 볼카운트 및 시프트 전술 해석 수칙**을 담은 System Prompt와 경기 상황 메타 데이터를 조합한 User Prompt를 생성해 Gemini API(model: `gemini-3.5-flash-lite`)에 전달하여 정교한 한국어 조언을 획득합니다.
 - **[CoachController.java](file:///c:/PolarBear_Projects/baseball-ai-coach/backend/src/main/java/com/baseball/ai/coach/controller/CoachController.java)**:
   - `POST /api/coach/advice` REST API 엔드포인트를 열어, 들어오는 상황에 따른 실시간 AI 전술 피드백을 JSON 형태(`{"advice": "..."}`)로 프론트엔드에 즉각 응답합니다.
 
