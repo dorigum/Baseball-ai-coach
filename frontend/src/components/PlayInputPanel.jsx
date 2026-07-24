@@ -10,7 +10,9 @@ const PlayInputPanel = ({
   runners,
   onRunnerToggle,
   hitLocation,
-  onSubmitRecord
+  onSubmitRecord,
+  onTriggerAiAnalysis,
+  showModal
 }) => {
   const stadiums = [
     { name: '잠실 (LG/두산)', desc: '⚾ 매우 넓은 외야 (홈런 억제, 우중간 깊음)' },
@@ -77,19 +79,19 @@ const PlayInputPanel = ({
 
   const handleSave = () => {
     if (!pitchInfo.pitcherName || !pitchInfo.pitcherTeam || !pitchInfo.batterName || !pitchInfo.batterTeam) {
-      alert('투수/타자 이름과 팀 정보를 모두 입력해주세요!');
+      showModal('⚠️ 입력 누락', '투수/타자 이름과 팀 정보를 모두 입력해주세요!', 'warning');
       return;
     }
     if (!pitchInfo.pitchType) {
-      alert('구종을 선택해주세요!');
+      showModal('⚠️ 입력 누락', '구종을 선택해주세요!', 'warning');
       return;
     }
     if (!pitchInfo.pitchResult) {
-      alert('투구 결과를 선택해주세요!');
+      showModal('⚠️ 입력 누락', '투구 결과를 선택해주세요!', 'warning');
       return;
     }
     if (pitchInfo.pitchResult === 'InPlay' && !pitchInfo.playResult) {
-      alert('인플레이 타구의 최종 결과를 선택해주세요!');
+      showModal('⚠️ 입력 누락', '인플레이 타구의 최종 결과를 선택해주세요!', 'warning');
       return;
     }
 
@@ -353,24 +355,58 @@ const PlayInputPanel = ({
       <div className="flex flex-col gap-3">
         <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider">Pitch Type (구종)</label>
         <div className="grid grid-cols-3 gap-2">
-          {pitchTypes.map((p) => {
-            const isSelected = pitchInfo.pitchType === p.value;
-            return (
-              <button
-                key={p.value}
-                type="button"
-                className={`py-2 px-3 rounded-xl border text-xs font-bold transition-all duration-200 ${
-                  isSelected 
-                    ? 'border-emerald-400 bg-emerald-500/30 text-white shadow-[0_0_12px_rgba(16,185,129,0.3)]' 
-                    : `${p.color} border-white/5`
-                }`}
-                onClick={() => handleInputChange('pitchType', p.value)}
-              >
-                {p.label.split(' ')[0]}
-              </button>
-            );
-          })}
+          {(() => {
+            const standardTypes = ['Fastball', 'Slider', 'Curve', 'Changeup', 'Splitter', 'Cutter'];
+            const isCustomSelected = pitchInfo.pitchType && !standardTypes.includes(pitchInfo.pitchType);
+            const pitchTypesExtended = [
+              ...pitchTypes,
+              { label: '기타 (직접 입력)', value: 'Etc', color: 'bg-slate-500/20 text-slate-400 border-slate-500/40 hover:bg-slate-500/30' }
+            ];
+
+            return pitchTypesExtended.map((p) => {
+              const isSelected = p.value === 'Etc' 
+                ? isCustomSelected 
+                : pitchInfo.pitchType === p.value;
+
+              return (
+                <button
+                  key={p.value}
+                  type="button"
+                  className={`py-2 px-3 rounded-xl border text-xs font-bold transition-all duration-200 ${
+                    isSelected 
+                      ? 'border-emerald-400 bg-emerald-500/30 text-white shadow-[0_0_12px_rgba(16,185,129,0.3)]' 
+                      : `${p.color} border-white/5`
+                  }`}
+                  onClick={() => {
+                    if (p.value === 'Etc') {
+                      handleInputChange('pitchType', '기타');
+                    } else {
+                      handleInputChange('pitchType', p.value);
+                    }
+                  }}
+                >
+                  {p.label.split(' ')[0]}
+                </button>
+              );
+            });
+          })()}
         </div>
+
+        {/* 기타 구종 직접 입력 인풋 */}
+        {(() => {
+          const standardTypes = ['Fastball', 'Slider', 'Curve', 'Changeup', 'Splitter', 'Cutter'];
+          const isCustomPitchType = pitchInfo.pitchType && !standardTypes.includes(pitchInfo.pitchType);
+          
+          return isCustomPitchType && (
+            <input
+              type="text"
+              className="w-full bg-slate-950/80 border border-emerald-500/30 rounded-xl px-3 py-2 text-white placeholder-slate-600 focus:outline-none focus:border-emerald-500 text-xs font-semibold mt-1 animate-fade-in"
+              placeholder="기타 구종 이름을 직접 입력하세요 (예: 포크볼, 싱커, 투심, 너클볼)"
+              value={pitchInfo.pitchType === '기타' ? '' : pitchInfo.pitchType}
+              onChange={(e) => handleInputChange('pitchType', e.target.value || '기타')}
+            />
+          );
+        })()}
 
         <div className="mt-2">
           <div className="flex justify-between text-xs font-semibold text-slate-400 mb-1">
@@ -450,11 +486,20 @@ const PlayInputPanel = ({
         </div>
       )}
 
+      {/* AI 전술 분석 실행 버튼 */}
+      <button
+        type="button"
+        onClick={onTriggerAiAnalysis}
+        className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-3 px-4 rounded-xl border border-indigo-400/20 shadow-md hover:shadow-indigo-500/10 active:scale-[0.99] transition-all duration-150 text-sm flex items-center justify-center gap-2 mt-1"
+      >
+        🔮 AI 실시간 전술 분석 실행
+      </button>
+
       {/* 저장 버튼 */}
       <button
         type="button"
         onClick={handleSave}
-        className="w-full mt-2 bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 text-white font-bold py-3 px-4 rounded-xl border border-emerald-400/20 shadow-lg hover:shadow-emerald-500/10 active:scale-[0.99] transition-all duration-150 text-sm flex items-center justify-center gap-2"
+        className="w-full mt-1 bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 text-white font-bold py-3 px-4 rounded-xl border border-emerald-400/20 shadow-lg hover:shadow-emerald-500/10 active:scale-[0.99] transition-all duration-150 text-sm flex items-center justify-center gap-2"
       >
         📥 투구 기록 추가 및 분석 반영
       </button>

@@ -18,25 +18,38 @@ public class AiAdviceService {
     private final ChatModel chatModel;
 
     /**
-     * Gemini 1.5 Flash API를 활용하여 상황별 실시간 야구 전술 조언 생성
+     * Gemini 3.5 Flash-Lite API를 활용하여 상황별 실시간 야구 전술 조언 생성
      */
     public String generateTacticalAdvice(AdviceRequestDto dto) {
         String systemInstructions = """
             당신은 한국 프로야구(KBO)의 최고 베테랑 야구 전술 분석 코치입니다.
-            제시되는 경기 상황 데이터를 종합하여, 투수의 구종 선택과 내/외야 수비 시프트 방향을 지시하는 구체적인 실시간 전술 조언을 제공해 주세요.
+            제시되는 경기 상황 데이터를 종합하여, 사용자의 기준 구단(myTeam)의 입장에서 팀이 승리할 수 있도록 실시간 전술 조언을 제공해 주세요.
             
             [필수 준수 사항]
-            1. 구장(stadium)의 특성(예: 잠실은 광활하여 뜬공 유도 유리, 인천/대구는 홈런 친화적이므로 땅볼 유도 필수 등)을 전략에 직접적으로 반영하여 설명하십시오.
-            2. 현재 볼카운트(B-S-O), 주자 상황, 그리고 적용된 수비 시프트 형태를 전술적으로 해석하십시오.
-            3. 투수(소속팀)와 타자(소속팀)의 구체적인 맞대결 맥락과, 어떤 구종을 던져야 스윙을 유인하거나 맞춰잡을 수 있을지 실질적 코칭 조언을 제공하십시오.
-            4. 정중하고 단호한 베테랑 야구 코치 어조(한국어)를 사용하고, 줄바꿈을 활용해 가독성 있게 3~4문장 내외로 작성하십시오.
+            1. 조언의 어조는 너무 딱딱한 명령조(~하십시오)를 지양하고, **부드럽고 전문적인 격식체 존댓말('~해야 합니다', '~를 권장합니다', '~가 필요합니다')**을 기본 종결형으로 사용하십시오. 반말(~하네, ~하게, ~임)은 절대로 금지합니다.
+            2. 편파적이거나 지나치게 주관적인 감정 표현(예: "우리 LG 트윈스", "우리 ~~선수", "아군" 등)은 **절대 사용하지 마십시오**. 담백하고 객관적인 구단명과 선수명(예: "LG 트윈스는", "양현종 선수는", "김현수 선수는")을 사용해 분석을 서술하십시오.
+            3. 분석 시점은 항상 사용자의 구단인 **myTeam (기준 구단)** 기준이어야 합니다.
+               - **myTeam이 공격 중일 때** (타자 소속 팀이 myTeam인 경우): 타자가 상대 투수의 구속/구종과 수비 시프트를 뚫고 출루/득점하기 위한 구체적인 타격 공략법 및 주루 전략을 조언하십시오. (상대 투수를 공략하는 타자 위주 조언)
+                 * 예: "양현종 선수의 낮은 체인지업에 말려들지 말고, 구장이 넓은 잠실구장인 만큼 정교한 컨택으로 외야 빈 곳을 공략해야 합니다."
+               - **myTeam이 수비 중일 때** (투수 소속 팀이 myTeam인 경우): 투수와 야수가 상대 타자의 약점을 공략해 아웃카운트를 효과적으로 잡기 위한 투구 위치 전략 및 수비 시프트 운용 지침을 조언하십시오. (상대 타자를 잡는 투수/야수 위주 조언)
+                 * 예: "김현수 선수의 몸쪽 장타력을 경계하기 위해, 투수는 바깥쪽 흘러나가는 슬라이더로 땅볼 아웃을 유도하고 내야 시프트를 타이트하게 좁혀야 합니다."
+            4. 구장(stadium)의 특성(예: 잠실은 광활하므로 수비 시 뜬공 유도 유리/공격 시 빈 공간 공략 기습 타격 등, 인천/대구는 홈런 친화적이므로 수비 시 가라앉는 투구 필수/공격 시 장타 지향 타격 등)을 전술에 명확히 반영하십시오.
+            5. 현재 볼카운트(B-S-O), 주자 상황, 선택 구종 및 수비 시프트 형태를 myTeam의 공/수 맥락에 맞춰 입체적으로 해석하십시오.
+            6. 가독성 있게 줄바꿈을 활용해 3~4문장 내외로 작성하십시오.
             """;
+
+        // 기준 구단의 현재 공수 상태 판별
+        boolean isTop = "초".equals(dto.getInningHalf());
+        String attackingTeam = isTop ? dto.getOpponentTeam() : dto.getMyTeam();
+        boolean isMyTeamOffense = dto.getMyTeam().equals(attackingTeam);
+        String myTeamRole = isMyTeamOffense ? "공격 중 (타자/주자 전술 수립 필요)" : "수비 중 (투수/야수 시프트 전술 수립 필요)";
 
         String userPrompt = String.format("""
             [경기 상황 데이터]
             - 경기 정보: %d회%s
             - 구장: %s
             - 대진: %s (홈/기준팀) vs %s (원정/상대팀)
+            - 기준 구단(%s)의 현재 상황: %s
             - 카운트: %d 볼 - %d 스트라이크 - %d 아웃
             - 주자: %s
             - 투수: %s (%s)
@@ -51,6 +64,8 @@ public class AiAdviceService {
             dto.getStadium(),
             dto.getMyTeam(),
             dto.getOpponentTeam(),
+            dto.getMyTeam(),
+            myTeamRole,
             dto.getBalls(),
             dto.getStrikes(),
             dto.getOuts(),
@@ -68,7 +83,7 @@ public class AiAdviceService {
 
         Prompt prompt = new Prompt(List.of(systemMsg, userMsg));
         
-        return chatModel.call(prompt).getResult().getOutput().getContent();
+        return chatModel.call(prompt).getResult().getOutput().getText();
     }
 
     private String formatRunners(AdviceRequestDto dto) {

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import BaseballField from './components/BaseballField';
 import PlayInputPanel from './components/PlayInputPanel';
 import Dashboard from './components/Dashboard';
@@ -344,6 +344,19 @@ function App() {
   const [pitchLogs, setPitchLogs] = useState(initialLogs);
   const [hitLocation, setHitLocation] = useState(null);
   const [aiAdvice, setAiAdvice] = useState('');
+  const abortControllerRef = useRef(null);
+  const [modal, setModal] = useState({
+    isOpen: false,
+    title: '',
+    message: '',
+    type: 'warning'
+  });
+  const showModal = (title, message, type = 'warning') => {
+    setModal({ isOpen: true, title, message, type });
+  };
+  const closeModal = () => {
+    setModal(prev => ({ ...prev, isOpen: false }));
+  };
 
   // 경기 설정 상태
   const [gameInfo, setGameInfo] = useState({
@@ -502,91 +515,161 @@ function App() {
     return '기본 표준 수비 포지션';
   };
 
-  // [NEW] 백엔드 Gemini API 연동 실시간 야구 전술 조언 Fetch (500ms 디바운스, Fallback, 레이스컨디션 방지 Abort)
-  useEffect(() => {
-    const shift = getShiftType();
+  // [수정] 로컬 백업 룰 폴백 조언 생성기 (공수 상황별 분기 및 구장 특징 정합성 강화)
+  const triggerLocalFallback = () => {
+    const stadiumName = gameInfo.stadium;
+    const activeBases = [
+      runners.first && '1루',
+      runners.second && '2루',
+      runners.third && '3루'
+    ].filter(Boolean);
+    const runnerLabel = activeBases.join(', ') || '없음';
+
+    const isTop = gameInfo.inningHalf === '초';
+    const attackingTeam = isTop ? gameInfo.opponentTeam : gameInfo.myTeam;
+    const isMyTeamOffense = gameInfo.myTeam === attackingTeam;
+    
+    let localAdvice = `🏟️ [로컬 백업 엔진 조언] 현재 카운트(${count.balls}B-${count.strikes}S, ${count.outs}O, 주자 ${runnerLabel}) 상황입니다.\n`;
+    
+    if (isMyTeamOffense) {
+      // 아군(myTeam) 공격 시
+      const hasRunners = runners.first || runners.second || runners.third;
+      localAdvice += `👉 [공격 전략] `;
+      
+      // 1. 구장별 맞춤 조언 분기
+      if (stadiumName.includes('잠실')) {
+        localAdvice += `${gameInfo.myTeam} 타선은 잠실구장과 같이 외야가 넓은 야구장에서는 큰 스윙보다는 정교한 컨택으로 빈 공간을 공략하는 라인드라이브 타격이 효과적입니다. `;
+      } else if (stadiumName.includes('인천') || stadiumName.includes('대구')) {
+        localAdvice += `특히 ${stadiumName.split(' ')[0]}구장은 홈런 펜스가 매우 가까워 피장타율이 높으므로, 어퍼스윙을 가미한 장타 지향 타격이 승리에 유리합니다. `;
+      } else {
+        localAdvice += '표준 규격 구장이므로 무리하지 않고 상황에 맞춘 중단거리 스프레이 히팅 전략을 권장합니다. ';
+      }
+
+      // 2. 주자 상황별 조언 분기
+      if (hasRunners) {
+        localAdvice += '현재 주자가 루상에 포진해 있으므로 진루타를 생산하기 위한 팀 배팅과 작전 주루에 집중하십시오.';
+      } else {
+        localAdvice += '루상에 주자가 없으므로 조급한 타격보다는 타자 개개인의 출루율을 높이기 위해 차분한 선구안으로 출루 기회를 노리는 것이 좋습니다.';
+      }
+    } else {
+      // 아군(myTeam) 수비 시
+      localAdvice += `👉 [수비 전략] ${gameInfo.myTeam} 투수/수비진은 `;
+      if (stadiumName.includes('잠실')) {
+        localAdvice += '광활한 잠실구장의 특징을 활용하여 피장타 부담 없이 한가운데 스트라이크존을 높이고, 외야진은 플라이볼 맞춰잡기 형태로 넓은 전술 수비 간격을 유지해야 합니다.';
+      } else if (stadiumName.includes('인천') || stadiumName.includes('대구')) {
+        localAdvice += '피홈런 펜스가 가까우므로 종무브먼트 구종(스플리터, 체인지업)으로 가라앉히는 로우존 투구를 하고, 내야진은 땅볼 수비 병살에 대비해야 합니다.';
+      } else {
+        localAdvice += '초구 스트라이크 선점으로 볼카운트 주도권을 쥐고, 주자 진루를 차단하는 기본 수비 포메이션 유지를 권장합니다.';
+      }
+    }
+    setAiAdvice(localAdvice);
+  };
+
+  // [NEW] 수동 AI 전술 분석 실행 함수 (입력 정합성 검증 & AbortController 탑재)
+  const handleTriggerAiAnalysis = async () => {
+    const isTop = gameInfo.inningHalf === '초';
+    const attackingTeam = isTop ? gameInfo.opponentTeam : gameInfo.myTeam;
+    const defendingTeam = isTop ? gameInfo.myTeam : gameInfo.opponentTeam;
+
+    const cleanPitcherTeam = (pitchInfo.pitcherTeam || '').trim();
+    const cleanBatterTeam = (pitchInfo.batterTeam || '').trim();
+    const cleanPitcherName = (pitchInfo.pitcherName || '').trim();
+    const cleanBatterName = (pitchInfo.batterName || '').trim();
+
+    // 1. 투수 소속 구단 검증
+    if (cleanPitcherTeam !== defendingTeam) {
+      alert(`⚠️ 수비팀 오류: 현재 수비 중인 구단은 [${defendingTeam}]입니다.\n투수의 소속 구단명을 [${defendingTeam}]로 정확하게 기입해 주세요.`);
+      return;
+    }
+
+    // 2. 타자 소속 구단 검증
+    if (cleanBatterTeam !== attackingTeam) {
+      alert(`⚠️ 공격팀 오류: 현재 공격 중인 구단은 [${attackingTeam}]입니다.\n타자의 소속 구단명을 [${attackingTeam}]로 정확하게 기입해 주세요.`);
+      return;
+    }
+
+    // 3. 선수 한글 이름 정규식 검증 (영어 오타 유효성 검사)
+    const KOREAN_NAME_REGEX = /^[가-힣\s.·]+$/;
+    if (!cleanPitcherName || !KOREAN_NAME_REGEX.test(cleanPitcherName)) {
+      alert('⚠️ 입력 오류: 투수 이름은 올바른 한글 이름(한글, 공백, 점)으로 입력해 주세요. (영어/숫자 오타가 없는지 확인해 주세요.)');
+      return;
+    }
+    if (!cleanBatterName || !KOREAN_NAME_REGEX.test(cleanBatterName)) {
+      alert('⚠️ 입력 오류: 타자 이름은 올바른 한글 이름(한글, 공백, 점)으로 입력해 주세요. (영어/숫자 오타가 없는지 확인해 주세요.)');
+      return;
+    }
+
+    // 4. 구종 선택 및 기타 미입력 검증
+    if (!pitchInfo.pitchType) {
+      alert('⚠️ 입력 오류: 전술 분석을 시작하기 위해 구종(Pitch Type)을 먼저 선택해 주세요.');
+      return;
+    }
+    if (pitchInfo.pitchType === '기타' || pitchInfo.pitchType.trim() === '') {
+      alert('⚠️ 입력 오류: [기타 (직접 입력)]을 선택하셨습니다. 구종의 명칭(예: 포크볼, 싱커 등)을 직접 입력해 주세요.');
+      return;
+    }
+
+    // 이전 비동기 통신이 완료되지 않았다면 강제 취소 (레이스컨디션 원천 차단)
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
     const controller = new AbortController();
+    abortControllerRef.current = controller;
     const signal = controller.signal;
 
-    // 공통 로컬 백업 룰 폴백 조언 생성기 (주자 표기 정합성 보완)
-    const triggerLocalFallback = () => {
-      const stadiumName = gameInfo.stadium;
-      const activeBases = [
-        runners.first && '1루',
-        runners.second && '2루',
-        runners.third && '3루'
-      ].filter(Boolean);
-      const runnerLabel = activeBases.join(', ') || '없음';
-      
-      let localAdvice = `🏟️ [로컬 백업 엔진 조언] 현재 카운트(${count.balls}B-${count.strikes}S, ${count.outs}O, 주자 ${runnerLabel}) 상황입니다.\n`;
-      if (stadiumName.includes('잠실')) {
-        localAdvice += '👉 국내 최대 규모인 잠실구장의 광활한 외야를 활용하십시오. 투수는 장타 부담 없이 한가운데 스트라이크존 공략을 높이고, 외야진은 플라이볼 맞춰잡기 형태로 전술 수비 간격을 유지하는 것이 정석입니다.';
-      } else if (stadiumName.includes('인천')) {
-        localAdvice += '👉 인천 문학구장은 홈런 펜스가 극도로 가까워 장타 확률이 비약적으로 높습니다. 투수는 종무브먼트 구종(스플리터, 체인지업)으로 철저히 가라앉히는 로우존 투구를 지시하고, 내야진은 땅볼 수비 병살에 대비해야 합니다.';
+    setAiAdvice('🔮 AI 실시간 전술 분석을 실행하는 중입니다...');
+
+    try {
+      const shift = getShiftType();
+      const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080';
+      const response = await fetch(`${apiBaseUrl}/api/coach/advice`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        signal, // AbortSignal 등록
+        body: JSON.stringify({
+          stadium: gameInfo.stadium,
+          myTeam: gameInfo.myTeam,
+          opponentTeam: gameInfo.opponentTeam,
+          inning: gameInfo.inning,
+          inningHalf: gameInfo.inningHalf,
+          balls: count.balls,
+          strikes: count.strikes,
+          outs: count.outs,
+          firstBase: runners.first,
+          secondBase: runners.second,
+          thirdBase: runners.third,
+          pitcherName: cleanPitcherName,
+          pitcherTeam: cleanPitcherTeam,
+          batterName: cleanBatterName,
+          batterTeam: cleanBatterTeam,
+          pitchType: pitchInfo.pitchType,
+          shiftType: shift
+        })
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setAiAdvice(data.advice);
       } else {
-        localAdvice += '👉 표준 경기장 포메이션을 고려하십시오. 초구 스트라이크 선점으로 볼카운트 주도권을 쥐고, 주자 진루를 막는 안전형 기본 시프트 대형을 유지할 것을 권장합니다.';
-      }
-      setAiAdvice(localAdvice);
-    };
-
-    const fetchAdvice = async () => {
-      try {
-        const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080';
-        const response = await fetch(`${apiBaseUrl}/api/coach/advice`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            stadium: gameInfo.stadium,
-            myTeam: gameInfo.myTeam,
-            opponentTeam: gameInfo.opponentTeam,
-            inning: gameInfo.inning,
-            inningHalf: gameInfo.inningHalf,
-            balls: count.balls,
-            strikes: count.strikes,
-            outs: count.outs,
-            firstBase: runners.first,
-            secondBase: runners.second,
-            thirdBase: runners.third,
-            pitcherName: pitchInfo.pitcherName,
-            pitcherTeam: pitchInfo.pitcherTeam,
-            batterName: pitchInfo.batterName,
-            batterTeam: pitchInfo.batterTeam,
-            pitchType: pitchInfo.pitchType,
-            shiftType: shift
-          })
-        });
-
-        if (response.ok) {
-          const data = await response.json();
-          setAiAdvice(data.advice);
-        } else {
-          // non-2xx 응답 발생 시에도 동일한 폴백 엔진 적용
-          triggerLocalFallback();
-        }
-      } catch (err) {
-        // 네트워크 단절 및 예외 발생 시 로컬 폴백 엔진 적용
         triggerLocalFallback();
       }
+    } catch (err) {
+      if (err.name !== 'AbortError') {
+        triggerLocalFallback();
+      }
+    }
+  };
+
+  // 컴포넌트 언마운트 시 이전 요청 클린업
+  useEffect(() => {
+    return () => {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
     };
-
-    const timer = setTimeout(() => {
-      fetchAdvice();
-    }, 500);
-
-    return () => clearTimeout(timer);
-  }, [
-    positions, 
-    runners, 
-    count, 
-    pitchInfo.pitcherName, 
-    pitchInfo.pitcherTeam, 
-    pitchInfo.batterName, 
-    pitchInfo.batterTeam, 
-    pitchInfo.pitchType, 
-    gameInfo
-  ]);
+  }, []);
 
   // 기록 제출 시 카운트 및 주자 시뮬레이션 업데이트
   const handleSubmitRecord = () => {
@@ -674,7 +757,7 @@ function App() {
     if (nextCount.outs >= 3) {
       nextCount = { balls: 0, strikes: 0, outs: 0 };
       nextRunners = { first: false, second: false, third: false };
-      alert('🔄 3아웃 체인지! 공수가 교대되거나 다음 이닝으로 넘어갑니다.');
+      showModal('🔄 3아웃 체인지', '공수가 교대되거나 다음 이닝으로 넘어갑니다.', 'info');
     }
 
     setCount(nextCount);
@@ -690,9 +773,11 @@ function App() {
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans pb-12">
       <header className="sticky top-0 z-50 bg-slate-950/80 backdrop-blur-md border-b border-white/10 px-6 py-4 flex items-center justify-between shadow-lg">
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-lg bg-emerald-500 flex items-center justify-center font-bold text-white shadow-[0_0_15px_rgba(16,185,129,0.4)]">
-            BA
-          </div>
+          <img 
+            src="/favicon_baseball_ai.jpg" 
+            alt="Baseball AI Coach Logo" 
+            className="w-9 h-9 rounded-lg object-cover shadow-[0_0_15px_rgba(16,185,129,0.4)] border border-emerald-500/20"
+          />
           <div>
             <h1 className="text-lg font-extrabold tracking-tight text-white flex items-center gap-1.5">
               Baseball AI Coach <span className="text-[10px] bg-emerald-950 text-emerald-400 border border-emerald-500/20 px-1.5 py-0.5 rounded font-mono font-normal">v1.6-beta</span>
@@ -738,6 +823,8 @@ function App() {
             onRunnerToggle={handleRunnerToggle}
             hitLocation={hitLocation}
             onSubmitRecord={handleSubmitRecord}
+            onTriggerAiAnalysis={handleTriggerAiAnalysis}
+            showModal={showModal}
           />
         </div>
 
@@ -755,6 +842,36 @@ function App() {
           />
         </div>
       </main>
+
+      {/* 커스텀 다크 모드 Glassmorphism 알림 모달 */}
+      {modal.isOpen && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/70 backdrop-blur-sm animate-[fadeIn_0.2s_ease-out]">
+          <div className="bg-slate-900/90 border border-white/10 rounded-2xl p-6 max-w-sm w-full mx-4 shadow-2xl backdrop-blur-md transform transition-all scale-100 flex flex-col">
+            <div className="flex items-start gap-4">
+              <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-lg shrink-0 ${
+                modal.type === 'error' ? 'bg-red-500/10 text-red-400 border border-red-500/20' :
+                modal.type === 'info' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' :
+                'bg-amber-500/10 text-amber-400 border border-amber-500/20'
+              }`}>
+                {modal.type === 'error' ? '🚨' : modal.type === 'info' ? '🔄' : '⚠️'}
+              </div>
+              <div className="flex-1">
+                <h3 className="text-sm font-bold text-white mb-1.5">{modal.title}</h3>
+                <p className="text-xs text-slate-300 leading-relaxed whitespace-pre-line font-medium">{modal.message}</p>
+              </div>
+            </div>
+            <div className="mt-6 flex justify-end">
+              <button
+                type="button"
+                onClick={closeModal}
+                className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-lg transition-all border border-indigo-400/20 shadow-md active:scale-95"
+              >
+                확인
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
