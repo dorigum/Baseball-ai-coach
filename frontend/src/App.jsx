@@ -502,14 +502,23 @@ function App() {
     return '기본 표준 수비 포지션';
   };
 
-  // [NEW] 백엔드 Gemini API 연동 실시간 야구 전술 조언 Fetch (500ms 디바운스 및 Fallback 지원)
+  // [NEW] 백엔드 Gemini API 연동 실시간 야구 전술 조언 Fetch (500ms 디바운스, Fallback, 레이스컨디션 방지 Abort)
   useEffect(() => {
     const shift = getShiftType();
+    const controller = new AbortController();
+    const signal = controller.signal;
 
-    // 공통 로컬 백업 룰 폴백 조언 생성기
+    // 공통 로컬 백업 룰 폴백 조언 생성기 (주자 표기 정합성 보완)
     const triggerLocalFallback = () => {
       const stadiumName = gameInfo.stadium;
-      let localAdvice = `🏟️ [로컬 백업 엔진 조언] 현재 카운트(${count.balls}B-${count.strikes}S, ${count.outs}O, 주자 ${runners.first ? '1' : ''}${runners.second ? '2' : ''}${runners.third ? '3' : '없음'}루) 상황입니다.\n`;
+      const activeBases = [
+        runners.first && '1루',
+        runners.second && '2루',
+        runners.third && '3루'
+      ].filter(Boolean);
+      const runnerLabel = activeBases.join(', ') || '없음';
+      
+      let localAdvice = `🏟️ [로컬 백업 엔진 조언] 현재 카운트(${count.balls}B-${count.strikes}S, ${count.outs}O, 주자 ${runnerLabel}) 상황입니다.\n`;
       if (stadiumName.includes('잠실')) {
         localAdvice += '👉 국내 최대 규모인 잠실구장의 광활한 외야를 활용하십시오. 투수는 장타 부담 없이 한가운데 스트라이크존 공략을 높이고, 외야진은 플라이볼 맞춰잡기 형태로 전술 수비 간격을 유지하는 것이 정석입니다.';
       } else if (stadiumName.includes('인천')) {

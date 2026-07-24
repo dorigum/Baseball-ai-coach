@@ -8,22 +8,22 @@
 
 ## 💻 1단계: 프론트엔드 UI/UX
 
-[frontend](file:///c:/PolarBear_Projects/baseball-ai-coach/frontend) 폴더에 위치해 있으며 주요 구성 요소는 다음과 같습니다:
+[frontend](../frontend) 폴더에 위치해 있으며 주요 구성 요소는 다음과 같습니다:
 
-1. **[BaseballField.jsx](file:///c:/PolarBear_Projects/baseball-ai-coach/frontend/src/components/BaseballField.jsx)**
+1. **[BaseballField.jsx](../frontend/src/components/BaseballField.jsx)**
    - **Interactive SVG Field**: 9명의 수비수 포지션을 자유롭게 드래그하여 시프트를 구상합니다.
    - **Click to Tag**: 필드를 클릭하면 타구 낙하 지점에 볼 마커와 펄스 애니메이션이 활성화되어 좌표를 수집합니다.
    - **Runners Base Clickable**: 베이스(1, 2, 3루) 클릭으로 주자 배치를 토글합니다.
    - **수비수 호버 툴팁**: 9개의 수비수 배지에 마우스를 올리면 해당 포지션의 선수 정보(예: `김도영 (KIA)`)가 플로팅 툴팁으로 즉각 나타납니다.
    - **전광판 공수 뱃지**: 현재 이닝 진행 상태에 맞추어 공격 구단(Red 🔥) 및 수비 구단(Emerald 🛡️) 정보를 실시간 계산해 표기합니다.
 
-2. **[PlayInputPanel.jsx](file:///c:/PolarBear_Projects/baseball-ai-coach/frontend/src/components/PlayInputPanel.jsx)**
+2. **[PlayInputPanel.jsx](../frontend/src/components/PlayInputPanel.jsx)**
    - **경기 메타 정보 설정**: 날짜, 구장(국내 9개 대표 야구장 팁 제공), 우리팀 vs 상대팀, 진행 이닝(1~12회 초/말)을 입력합니다.
    - **공수 교대 인디케이터**: 이닝 설정 하단에 실시간 공격팀과 수비팀 정보를 표기해 입력 시의 정합성을 돕습니다.
    - **선수 팀정보 매칭**: 투수와 타자명 옆에 소속 구단(Team) 기입란을 신설하여 정합성을 정비했습니다.
    - **SBO Scoreboard & Chips**: 전광판식 볼카운트 및 구종 칩(Fastball 등), 구속 조절 슬라이더, 결과 선택 폼이 연동됩니다.
 
-3. **[Dashboard.jsx](file:///c:/PolarBear_Projects/baseball-ai-coach/frontend/src/components/Dashboard.jsx)**
+3. **[Dashboard.jsx](../frontend/src/components/Dashboard.jsx)**
    - **실시간 공격 타순 설정 패널 (Batting Order)**:
      - 우측 대시보드 영역 상단에 **1번부터 9번까지의 공격 타순 명단 카드**를 배치했습니다.
      - 사용자가 경기 도중 대타가 투입되거나 타순 정보가 바뀔 경우, 각 번호별 타자 이름을 클릭하여 실시간 수동 교체(Inline Editor)할 수 있습니다.
@@ -35,7 +35,7 @@
    - **Recharts Charts**: 구종 비율(PieChart), 스프레이 분포도(ScatterChart), 인플레이 아웃풋(BarChart) 및 최근 로그 테이블을 시각화합니다.
    - **AI Coach Advice Box**: 주자 상황, 카운트, 시프트 정보 및 **구장별 특징(잠실: 플라이 아웃 유도, 인천/대구: 피홈런 경계 저공 피칭 등)**에 부합하는 실시간 AI 전략 룰 피드백을 출력합니다.
 
-4. **[App.jsx](file:///c:/PolarBear_Projects/baseball-ai-coach/frontend/src/App.jsx)**
+4. **[App.jsx](../frontend/src/App.jsx)**
    - 전체 컴포넌트의 단방향 데이터 흐름 조율 및 상태 관리.
    - **KBO 주요 구단 주전 라인업 및 타순 연계**: KBO 10개 구단 야수 명단 및 1~9번 스타팅 라인업 데이터를 기본 장착하여 `My Team` 및 `Opponent` 변경 시 툴팁 호버 정보와 투수/타자 정보가 유기적으로 자동 셋업 및 갱신되도록 개선했습니다.
    - **수비팀 선수 데이터 연계 정합성**: 야구장 SVG 필드에 표시되는 수비수 9명은 **현재 수비 중인 구단(defendingTeam)**의 선수여야 하므로, 이닝 초/말에 따른 실제 수비 구단의 라인업 데이터를 실시간 감지 매칭하여 야구장 호버 데이터와 동기화시켰습니다.
@@ -48,7 +48,7 @@
 
 ## ☕ 2단계 및 3단계: 백엔드 API 서버 & Spring AI 연동
 
-[backend](file:///c:/PolarBear_Projects/baseball-ai-coach/backend) 폴더에 위치해 있으며 주요 구성 요소는 다음과 같습니다:
+[backend](../backend) 폴더에 위치해 있으며 주요 구성 요소는 다음과 같습니다:
 
 ### 1. 기술 스택 및 데이터베이스 셋업
 - **Java 21 / Spring Boot 3.3.2 / Gradle** 기반 구축.
@@ -62,13 +62,13 @@
 - **PitchRecord (투구)**: 타석(PlateAppearance)과 N:1 매핑 및 투구 시퀀스, 구종, 구속, 카운트, 투구 결과 및 타구 좌표(X, Y) 보관.
 
 ### 3. Spring AI + Google Gemini API 연동 아키텍처
-- **Spring AI Google GenAI Starter 도입**: `build.gradle`에 `spring-ai-starter-model-google-genai` 의존성 및 1.0.0-M1 BOM 추가 설정을 완수했습니다.
+- **Spring AI Google GenAI Starter 도입**: `build.gradle`에 `spring-ai-starter-model-google-genai` 의존성 및 1.1.0-M1 BOM 추가 설정을 완수했습니다.
 - **API 키 동적 바인딩**: `application.yml`의 `spring.ai.google.genai.api-key` 설정을 `${GEMINI_API_KEY}` 환경변수 참조 방식으로 바인딩하여, API Key 노출을 원천 차단하고 런타임 주입을 활성화했습니다.
-- **[AdviceRequestDto.java](file:///c:/PolarBear_Projects/baseball-ai-coach/backend/src/main/java/com/baseball/ai/coach/dto/AdviceRequestDto.java)**:
+- **[AdviceRequestDto.java](../backend/src/main/java/com/baseball/ai/coach/dto/AdviceRequestDto.java)**:
   - 프론트엔드로부터 구장, 대진, 이닝, 카운트(B-S-O), 주자 배치 정보, 투타 선수 정보, 구종 및 수비 시프트 종류를 수집하는 데이터 전송 개체입니다.
-- **[AiAdviceService.java](file:///c:/PolarBear_Projects/baseball-ai-coach/backend/src/main/java/com/baseball/ai/coach/service/AiAdviceService.java)**:
+- **[AiAdviceService.java](../backend/src/main/java/com/baseball/ai/coach/service/AiAdviceService.java)**:
   - Spring AI의 `ChatModel`을 주입받아 **구장 특성(잠실구장 외야 크기, 인천 홈런공장 특성 등) 반영 수칙, 볼카운트 및 시프트 전술 해석 수칙**을 담은 System Prompt와 경기 상황 메타 데이터를 조합한 User Prompt를 생성해 Gemini API(model: `gemini-3.5-flash-lite`)에 전달하여 정교한 한국어 조언을 획득합니다.
-- **[CoachController.java](file:///c:/PolarBear_Projects/baseball-ai-coach/backend/src/main/java/com/baseball/ai/coach/controller/CoachController.java)**:
+- **[CoachController.java](../backend/src/main/java/com/baseball/ai/coach/controller/CoachController.java)**:
   - `POST /api/coach/advice` REST API 엔드포인트를 열어, 들어오는 상황에 따른 실시간 AI 전술 피드백을 JSON 형태(`{"advice": "..."}`)로 프론트엔드에 즉각 응답합니다.
 
 ---

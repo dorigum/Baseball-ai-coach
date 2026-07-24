@@ -2,7 +2,7 @@ spring:
   application:
     name: baseball-ai-coach
   
-  # [NEW] Spring AI Google GenAI (Gemini) API 설정 (genai 프리픽스 적용)
+  # Spring AI Google GenAI (Gemini) API 설정
   ai:
     google:
       genai:
@@ -14,9 +14,9 @@ spring:
   # 기본 프로필: H2 인메모리 DB (설치 없이 바로 기동 및 로컬 테스트 가능)
   datasource:
     url: jdbc:h2:mem:baseballdb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
-  username: sa
-  password:
-  driver-class-name: org.h2.Driver
+    username: sa
+    password:
+    driver-class-name: org.h2.Driver
   
   h2:
     console:
@@ -41,9 +41,9 @@ spring:
       on-profile: mysql
   datasource:
     url: jdbc:mysql://localhost:3306/baseballdb?serverTimezone=Asia/Seoul&characterEncoding=UTF-8
-  username: root
-  password: yourpassword
-  driver-class-name: com.mysql.cj.jdbc.Driver
+    username: ${MYSQL_USER:root}
+    password: ${MYSQL_PASSWORD:yourpassword}
+    driver-class-name: com.mysql.cj.jdbc.Driver
   jpa:
     hibernate:
       ddl-auto: update
