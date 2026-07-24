@@ -521,11 +521,23 @@ function App() {
     
     if (isMyTeamOffense) {
       // 아군(myTeam) 공격 시
-      localAdvice += `👉 [공격 전략] ${gameInfo.myTeam} 타선은 잠실구장과 같이 외야가 넓은 야구장에서는 큰 스윙보다는 정교한 컨택으로 빈 공간을 공략하는 타격이 필요합니다. `;
-      if (stadiumName.includes('인천') || stadiumName.includes('대구')) {
-        localAdvice += `특히 ${stadiumName.split(' ')[0]}구장은 홈런 펜스가 매우 가까워 장타 확률이 높으므로, 어퍼스윙을 가미한 장타 지향 타격을 적극 권장합니다.`;
+      const hasRunners = runners.first || runners.second || runners.third;
+      localAdvice += `👉 [공격 전략] `;
+      
+      // 1. 구장별 맞춤 조언 분기
+      if (stadiumName.includes('잠실')) {
+        localAdvice += `${gameInfo.myTeam} 타선은 잠실구장과 같이 외야가 넓은 야구장에서는 큰 스윙보다는 정교한 컨택으로 빈 공간을 공략하는 라인드라이브 타격이 효과적입니다. `;
+      } else if (stadiumName.includes('인천') || stadiumName.includes('대구')) {
+        localAdvice += `특히 ${stadiumName.split(' ')[0]}구장은 홈런 펜스가 매우 가까워 피장타율이 높으므로, 어퍼스윙을 가미한 장타 지향 타격이 승리에 유리합니다. `;
       } else {
-        localAdvice += '주자가 루상에 있으므로 무리한 타격보다는 진루타를 생산하기 위한 팀 배팅과 작전 주루에 집중해야 합니다.';
+        localAdvice += '표준 규격 구장이므로 무리하지 않고 상황에 맞춘 중단거리 스프레이 히팅 전략을 권장합니다. ';
+      }
+
+      // 2. 주자 상황별 조언 분기
+      if (hasRunners) {
+        localAdvice += '현재 주자가 루상에 포진해 있으므로 진루타를 생산하기 위한 팀 배팅과 작전 주루에 집중하십시오.';
+      } else {
+        localAdvice += '루상에 주자가 없으므로 조급한 타격보다는 타자 개개인의 출루율을 높이기 위해 차분한 선구안으로 출루 기회를 노리는 것이 좋습니다.';
       }
     } else {
       // 아군(myTeam) 수비 시
