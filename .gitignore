@@ -1,0 +1,25 @@
+# Frontend ignore
+frontend/node_modules/
+frontend/dist/
+frontend/.env.local
+frontend/.env.development.local
+frontend/.env.test.local
+frontend/.env.production.local
+frontend/npm-debug.log*
+frontend/yarn-debug.log*
+frontend/yarn-error.log*
+frontend/pnpm-debug.log*
+
+# Backend ignore
+backend/.gradle/
+backend/build/
+backend/out/
+backend/.idea/
+backend/*.iml
+backend/*.ipr
+backend/*.iws
+backend/.vscode/
+backend/bin/
+backend/h2db/
+backend/*.log
+backend/src/main/resources/application-mysql.yml
