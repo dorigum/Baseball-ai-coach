@@ -18,7 +18,7 @@ public class AiAdviceService {
     private final ChatModel chatModel;
 
     /**
-     * Gemini 1.5 Flash API를 활용하여 상황별 실시간 야구 전술 조언 생성
+     * Gemini 3.5 Flash-Lite API를 활용하여 상황별 실시간 야구 전술 조언 생성
      */
     public String generateTacticalAdvice(AdviceRequestDto dto) {
         String systemInstructions = """
