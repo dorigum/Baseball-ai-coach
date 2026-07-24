@@ -19,14 +19,14 @@ configurations {
     }
 }
 
-// [NEW] Spring AI 버전 명세
+// Spring AI 버전 명세 (Gemini API를 정식 지원하는 마일스톤 버전 지정)
 ext {
     set('springAiVersion', "1.0.0-M1")
 }
 
 repositories {
     mavenCentral()
-    // [NEW] Spring AI Milestone Repository 추가
+    // Spring AI Milestone Repository 추가
     maven { url 'https://repo.spring.io/milestone' }
 }
 
@@ -35,8 +35,8 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-web'
     implementation 'org.springframework.boot:spring-boot-starter-validation'
     
-    // [NEW] Spring AI Google AI Starter 의존성 추가
-    implementation 'org.springframework.ai:spring-ai-google-ai-spring-boot-starter'
+    // [수정] 구 버전 대신 Spring AI Google GenAI(Gemini) 공식 스타터 라이브러리로 변경
+    implementation 'org.springframework.ai:spring-ai-starter-model-google-genai'
     
     compileOnly 'org.projectlombok:lombok'
     annotationProcessor 'org.projectlombok:lombok'
@@ -48,7 +48,7 @@ dependencies {
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 }
 
-// [NEW] Spring AI 의존성 관리 BOM 매핑
+// Spring AI 의존성 관리 BOM 매핑
 dependencyManagement {
     imports {
         mavenBom "org.springframework.ai:spring-ai-bom:${springAiVersion}"

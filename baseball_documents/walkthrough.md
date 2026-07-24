@@ -1,6 +1,6 @@
 # Baseball AI Coach - 구축 완료 보고서 (프론트엔드 & 백엔드)
 
-본 프로젝트는 **Vite + React 19 + Tailwind CSS v4** 프론트엔드와 **Spring Boot 3.3.2 + Java 21 + Spring Data JPA** 백엔드 API 서버를 구축하고, 최종적으로 **Spring AI Google AI Starter + Google Gemini API (gemini-3.5-flash-lite)** 연동을 성공적으로 완수하였습니다.
+본 프로젝트는 **Vite + React 19 + Tailwind CSS v4** 프론트엔드와 **Spring Boot 3.3.2 + Java 21 + Spring Data JPA** 백엔드 API 서버를 구축하고, 최종적으로 **Spring AI Google GenAI Starter + Google Gemini API (gemini-3.5-flash-lite)** 연동을 성공적으로 완수하였습니다.
 
 구장 장소와 경기 맥락(일시, 상대팀, 이닝, 카운트, 주자, 시프트)에 따른 지능적인 야구 코칭 분석 피드백 루프가 완전히 가동됩니다.
 
@@ -30,7 +30,7 @@
      - **현재 타석 강조 연동**: 현재 타석에 들어선 타자(`currentBatterName`)와 일치하는 타순의 경우, 붉은색 활성 테두리(Red Pulse)와 `AT BAT` 배지가 시각적으로 표시되어 경기 몰입도를 극대화합니다.
    - **실시간 수비 라인업 설정 패널 (Active Lineup)**:
      - 9명의 수비 포지션별 실시간 야수 명단을 관리하는 카드입니다.
-     - 각 포지션별 선수명을 클릭하면 인풋 폼으로 즉각 전환되어, 경기 도중 발생하는 **대수비 투입, 투수 교체 상황** 시자가 실시간으로 선수명을 수동 편집/교체할 수 있습니다.
+     - 각 포지션별 선수명을 클릭하면 인풋 폼으로 즉각 전환되어, 경기 도중 발생하는 **대수비 투입, 투수 교체 상황** 시 사용자가 실시간으로 선수명을 수동 편집/교체할 수 있습니다.
      - 투수(P)명을 에디터에서 수정 시, 피칭 기록 입력 패널의 투수명 정보도 자동으로 양방향 동기화 처리됩니다.
    - **Recharts Charts**: 구종 비율(PieChart), 스프레이 분포도(ScatterChart), 인플레이 아웃풋(BarChart) 및 최근 로그 테이블을 시각화합니다.
    - **AI Coach Advice Box**: 주자 상황, 카운트, 시프트 정보 및 **구장별 특징(잠실: 플라이 아웃 유도, 인천/대구: 피홈런 경계 저공 피칭 등)**에 부합하는 실시간 AI 전략 룰 피드백을 출력합니다.
@@ -62,8 +62,8 @@
 - **PitchRecord (투구)**: 타석(PlateAppearance)과 N:1 매핑 및 투구 시퀀스, 구종, 구속, 카운트, 투구 결과 및 타구 좌표(X, Y) 보관.
 
 ### 3. Spring AI + Google Gemini API 연동 아키텍처
-- **Spring AI Google AI Starter 도입**: `build.gradle`에 `spring-ai-google-ai-spring-boot-starter` 의존성 및 1.0.0-M1 BOM 추가 설정을 완수했습니다.
-- **API 키 동적 바인딩**: `application.yml`의 `spring.ai.google.api-key` 설정을 `${GEMINI_API_KEY}` 환경변수 참조 방식으로 바인딩하여, API Key 노출을 원천 차단하고 런타임 주입을 활성화했습니다.
+- **Spring AI Google GenAI Starter 도입**: `build.gradle`에 `spring-ai-starter-model-google-genai` 의존성 및 1.0.0-M1 BOM 추가 설정을 완수했습니다.
+- **API 키 동적 바인딩**: `application.yml`의 `spring.ai.google.genai.api-key` 설정을 `${GEMINI_API_KEY}` 환경변수 참조 방식으로 바인딩하여, API Key 노출을 원천 차단하고 런타임 주입을 활성화했습니다.
 - **[AdviceRequestDto.java](file:///c:/PolarBear_Projects/baseball-ai-coach/backend/src/main/java/com/baseball/ai/coach/dto/AdviceRequestDto.java)**:
   - 프론트엔드로부터 구장, 대진, 이닝, 카운트(B-S-O), 주자 배치 정보, 투타 선수 정보, 구종 및 수비 시프트 종류를 수집하는 데이터 전송 개체입니다.
 - **[AiAdviceService.java](file:///c:/PolarBear_Projects/baseball-ai-coach/backend/src/main/java/com/baseball/ai/coach/service/AiAdviceService.java)**:
