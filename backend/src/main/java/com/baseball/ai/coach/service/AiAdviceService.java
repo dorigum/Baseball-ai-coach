@@ -68,7 +68,7 @@ public class AiAdviceService {
 
         Prompt prompt = new Prompt(List.of(systemMsg, userMsg));
         
-        return chatModel.call(prompt).getResult().getOutput().getContent();
+        return chatModel.call(prompt).getResult().getOutput().getText();
     }
 
     private String formatRunners(AdviceRequestDto dto) {
