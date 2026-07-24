@@ -502,44 +502,91 @@ function App() {
     return '기본 표준 수비 포지션';
   };
 
-  // AI 전술 룰 엔진 (구장, 팀, 이닝 맥락을 반영한 AI 전술 가이드 고도화)
+  // [NEW] 백엔드 Gemini API 연동 실시간 야구 전술 조언 Fetch (500ms 디바운스, Fallback, 레이스컨디션 방지 Abort)
   useEffect(() => {
     const shift = getShiftType();
-    let advice = '';
+    const controller = new AbortController();
+    const signal = controller.signal;
 
-    // 구장 분석 로직
-    let stadiumAdvice = '';
-    const stadiumName = gameInfo.stadium;
-    if (stadiumName.includes('잠실')) {
-      stadiumAdvice = '🏟️ [잠실구장]: 국내 최대 규모의 외야를 자랑합니다. 홈런 억제력이 매우 크므로, 투수는 장타 우려를 접어두고 공격적으로 스트라이크존을 공략하여 외야 플라이 아웃을 유도하는 편이 현명합니다.';
-    } else if (stadiumName.includes('인천')) {
-      stadiumAdvice = '🔥 [SSG랜더스필드]: 대표적인 타자 친화 구장(홈런공장)입니다. 펜스가 매우 가까워 조금만 타구 각도가 들려도 홈런이 되므로, 투수는 낮은 코스 제구와 땅볼 유도가 최우선 과제입니다.';
-    } else if (stadiumName.includes('대구')) {
-      stadiumAdvice = '📐 [라팍]: 좌우중간 펜스 거리가 짧아 타자에게 매우 유리한 팔각 구장입니다. 피홈런 위험이 극도로 높은 만큼, 유인구를 낮게 구사해 내야 땅볼을 타격하게 유도해야 합니다.';
-    } else if (stadiumName.includes('사직')) {
-      stadiumAdvice = '🧱 [사직구장]: 담장 높이가 4.8m로 매우 높습니다. 뜬공 시 펜스를 맞아 2루타가 되는 경우에 대비해 외야진(LF/RF)은 벽면 바운드 수비 커버 위치를 사전에 조정하십시오.';
-    } else if (stadiumName.includes('고척')) {
-      stadiumAdvice = '🏟️ [고척돔]: 바람이나 날씨 변수가 없는 실내 돔구장입니다. 타구 상승 기류가 없고 습도 유지가 일정하므로, 표준적인 전략 하에 투타 순수 전력 분석에 집중하는 것이 유리합니다.';
-    } else {
-      stadiumAdvice = `🏟️ [${stadiumName.split(' ')[0]}]: 표준 규격의 야구장입니다. 잔디 마찰이나 펜스 특성에 크게 구애받지 않고 평소의 전술 포메이션을 활용하면 됩니다.`;
-    }
+    // 공통 로컬 백업 룰 폴백 조언 생성기 (주자 표기 정합성 보완)
+    const triggerLocalFallback = () => {
+      const stadiumName = gameInfo.stadium;
+      const activeBases = [
+        runners.first && '1루',
+        runners.second && '2루',
+        runners.third && '3루'
+      ].filter(Boolean);
+      const runnerLabel = activeBases.join(', ') || '없음';
+      
+      let localAdvice = `🏟️ [로컬 백업 엔진 조언] 현재 카운트(${count.balls}B-${count.strikes}S, ${count.outs}O, 주자 ${runnerLabel}) 상황입니다.\n`;
+      if (stadiumName.includes('잠실')) {
+        localAdvice += '👉 국내 최대 규모인 잠실구장의 광활한 외야를 활용하십시오. 투수는 장타 부담 없이 한가운데 스트라이크존 공략을 높이고, 외야진은 플라이볼 맞춰잡기 형태로 전술 수비 간격을 유지하는 것이 정석입니다.';
+      } else if (stadiumName.includes('인천')) {
+        localAdvice += '👉 인천 문학구장은 홈런 펜스가 극도로 가까워 장타 확률이 비약적으로 높습니다. 투수는 종무브먼트 구종(스플리터, 체인지업)으로 철저히 가라앉히는 로우존 투구를 지시하고, 내야진은 땅볼 수비 병살에 대비해야 합니다.';
+      } else {
+        localAdvice += '👉 표준 경기장 포메이션을 고려하십시오. 초구 스트라이크 선점으로 볼카운트 주도권을 쥐고, 주자 진루를 막는 안전형 기본 시프트 대형을 유지할 것을 권장합니다.';
+      }
+      setAiAdvice(localAdvice);
+    };
 
-    const gameContext = `⚔️ [${gameInfo.inning}회${gameInfo.inningHalf}] ${gameInfo.myTeam} vs ${gameInfo.opponentTeam} 경기 상황 분석`;
+    const fetchAdvice = async () => {
+      try {
+        const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080';
+        const response = await fetch(`${apiBaseUrl}/api/coach/advice`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            stadium: gameInfo.stadium,
+            myTeam: gameInfo.myTeam,
+            opponentTeam: gameInfo.opponentTeam,
+            inning: gameInfo.inning,
+            inningHalf: gameInfo.inningHalf,
+            balls: count.balls,
+            strikes: count.strikes,
+            outs: count.outs,
+            firstBase: runners.first,
+            secondBase: runners.second,
+            thirdBase: runners.third,
+            pitcherName: pitchInfo.pitcherName,
+            pitcherTeam: pitchInfo.pitcherTeam,
+            batterName: pitchInfo.batterName,
+            batterTeam: pitchInfo.batterTeam,
+            pitchType: pitchInfo.pitchType,
+            shiftType: shift
+          })
+        });
 
-    if (count.outs === 2 && runners.first && runners.second && runners.third) {
-      advice = `${gameContext}\n${stadiumAdvice}\n\n[2사 만루 상황] 볼넷은 바로 실점으로 직결됩니다. ${pitchInfo.pitcherName}(${pitchInfo.pitcherTeam}) 투수는 초구 스트라이크 비율을 극대화해야 합니다. ${pitchInfo.batterName}(${pitchInfo.batterTeam}) 타자는 최근 높은 속구에 배트가 밀리는 경향이 있으니, 몸쪽 위협 구종 이후 바깥쪽 ${pitchInfo.pitchType === 'Fastball' ? '스플리터' : '변화구'}를 결정구로 구사하십시오.`;
-    } else if (runners.first && count.outs < 2) {
-      advice = `${gameContext}\n${stadiumAdvice}\n\n[무사/1사 1루 - 병살 대기] 상대는 작전 야구(번트, 히트앤런)를 취할 가능성이 75% 이상입니다. 내야진은 번트 수비에 반응할 준비를 마쳤습니다. 투수는 종무브먼트 구종으로 땅볼을 적극적으로 끌어내 병살타를 노려야 합니다.`;
-    } else if (count.strikes === 2) {
-      advice = `${gameContext}\n${stadiumAdvice}\n\n[2스트라이크 유리한 카운트] 타자의 눈을 속일 결정구가 필요합니다. 하이 패스트볼로 궤적을 흩트린 후, 바깥쪽 하단으로 급격하게 떨어지는 ${pitchInfo.pitchType === 'Fastball' ? '슬라이더(Slider)' : '유인구'}를 던져 헛스윙 삼진을 노리는 전술이 유효합니다.`;
-    } else if (count.balls >= 2) {
-      advice = `${gameContext}\n${stadiumAdvice}\n\n[투볼 이상 타자 카운트] 적극적인 스윙 카운트입니다. 실투성 속구는 여지없이 피장타로 연결됩니다. 특히 ${stadiumName.includes('인천') || stadiumName.includes('대구') ? '홈런 친화형 구장이므로 피홈런을 각별히 유의해야 하며,' : ''} 체인지업이나 커터로 타이밍을 뺏는 지능적 투구가 필요합니다.`;
-    } else {
-      advice = `${gameContext}\n${stadiumAdvice}\n\n[일반 전술 조언] 현재 카운트(${count.balls}B-${count.strikes}S, ${count.outs}O, 주자 ${runners.first ? '1' : ''}${runners.second ? '2' : ''}${runners.third ? '3' : '없음'}루)에서는 투수 ${pitchInfo.pitcherName}(${pitchInfo.pitcherTeam})의 구위 우위를 살려 초구에 스트라이크존 하단을 찔러넣어 유리한 볼카운트를 선점하는 것이 좋습니다.`;
-    }
+        if (response.ok) {
+          const data = await response.json();
+          setAiAdvice(data.advice);
+        } else {
+          // non-2xx 응답 발생 시에도 동일한 폴백 엔진 적용
+          triggerLocalFallback();
+        }
+      } catch (err) {
+        // 네트워크 단절 및 예외 발생 시 로컬 폴백 엔진 적용
+        triggerLocalFallback();
+      }
+    };
 
-    setAiAdvice(advice);
-  }, [positions, runners, count, pitchInfo.pitcherName, pitchInfo.pitcherTeam, pitchInfo.batterName, pitchInfo.batterTeam, pitchInfo.pitchType, gameInfo]);
+    const timer = setTimeout(() => {
+      fetchAdvice();
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [
+    positions, 
+    runners, 
+    count, 
+    pitchInfo.pitcherName, 
+    pitchInfo.pitcherTeam, 
+    pitchInfo.batterName, 
+    pitchInfo.batterTeam, 
+    pitchInfo.pitchType, 
+    gameInfo
+  ]);
 
   // 기록 제출 시 카운트 및 주자 시뮬레이션 업데이트
   const handleSubmitRecord = () => {

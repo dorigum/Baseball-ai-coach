@@ -32,6 +32,18 @@
   수비진 정보를 헬퍼 함수를 매번 실행하는 구조 대신, 상태 전파 성능과 정합성을 보장하는 **리액트 상태(`defenders` state) 직접 바인딩 구조**(`defenders={defenders}`)로 프롭스 코드를 교체 조정하여 렌더러 복원 완료.
 - **상세 기록**: [2026-07-24 개발 로그](project-log/2026-07-24.md)
 
+## 4. Spring AI Google GenAI(Gemini) 의존성 누락 및 application.yml 프리픽스 동기화 에러
+
+- **발생일**: 2026-07-24
+- **요약**: Spring Boot 백엔드에 Gemini API 연동을 위해 `spring-ai-google-ai-spring-boot-starter`를 주입했으나, Gradle 컴파일 단계에서 의존성 버전을 찾지 못해 빌드가 실패하고 `application.yml` 프로퍼티 연동이 불일치했던 오류 조치
+- **원인**:
+  1. **라이브러리 공식 명칭 변경**: Spring AI가 빠르게 발전하면서 구버전인 `spring-ai-google-ai-spring-boot-starter` 아티팩트가 Milestone(1.0.0-M1) BOM에서 정상적으로 해석되지 않았음.
+  2. **프로퍼티 프리픽스 변경**: 이에 따라 application.yml 설정 키도 `spring.ai.google`에서 `spring.ai.google.genai`로 구조 변경이 일어났으나 구식 프리픽스를 참조하여 바인딩에 실패함.
+- **해결**:
+  1. `build.gradle` 의존성을 공식 최신 명칭인 **`spring-ai-starter-model-google-genai`**로 변경하여 Milestone 저장소와 올바르게 매핑되도록 처리함.
+  2. `application.yml` 설정을 `spring.ai.google.genai` 프리픽스로 업데이트하여 API 키와 Gemini 3.5 Flash-Lite 모델 바인딩을 매끄럽게 동기화함.
+- **상세 기록**: [2026-07-24 개발 로그](project-log/2026-07-24.md)
+
 ## 💡 참고 사항
 
 - 로컬 실행 환경 및 기본 구조 분석은 [프론트엔드 구축 완료 보고서](baseball_documents/walkthrough.md)를 참고하세요.
