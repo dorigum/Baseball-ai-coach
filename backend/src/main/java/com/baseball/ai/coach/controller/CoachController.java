@@ -1,7 +1,9 @@
 package com.baseball.ai.coach.controller;
 
+import com.baseball.ai.coach.dto.AdviceRequestDto;
 import com.baseball.ai.coach.dto.DashboardResponseDto;
 import com.baseball.ai.coach.dto.PitchRecordRequestDto;
+import com.baseball.ai.coach.service.AiAdviceService;
 import com.baseball.ai.coach.service.CoachService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -18,6 +20,7 @@ import java.util.Map;
 public class CoachController {
 
     private final CoachService coachService;
+    private final AiAdviceService aiAdviceService;
 
     /**
      * 투구 세션 기록 저장 API
@@ -41,5 +44,18 @@ public class CoachController {
             @RequestParam(value = "gameId", required = false) Long gameId) {
         DashboardResponseDto dashboardData = coachService.getDashboardData(gameId);
         return ResponseEntity.ok(dashboardData);
+    }
+
+    /**
+     * [NEW] Gemini API 연동 실시간 야구 전술 조언 획득 API
+     */
+    @PostMapping("/advice")
+    public ResponseEntity<Map<String, String>> getTacticalAdvice(@RequestBody AdviceRequestDto requestDto) {
+        String advice = aiAdviceService.generateTacticalAdvice(requestDto);
+        
+        Map<String, String> response = new HashMap<>();
+        response.put("advice", advice);
+        
+        return ResponseEntity.ok(response);
     }
 }
