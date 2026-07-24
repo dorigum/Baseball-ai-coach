@@ -44,7 +44,37 @@
   2. `application.yml` 설정을 `spring.ai.google.genai` 프리픽스로 업데이트하여 API 키와 Gemini 3.5 Flash-Lite 모델 바인딩을 매끄럽게 동기화함.
 - **상세 기록**: [2026-07-24 개발 로그](project-log/2026-07-24.md)
 
+## 5. YAML 들여쓰기(Indentation) 오류로 인한 Datasource 바인딩 결함
+
+- **발생일**: 2026-07-24
+- **요약**: application.yml 설정 내 H2/MySQL 데이터소스 관련 하위 설정들의 들여쓰기 불일치로 프로퍼티가 매핑되지 않았던 오류 조치
+- **원인**:
+  `username`, `password`, `driver-class-name` 키들이 `datasource:` 하위 속성(4-space)이 아닌 `spring:`의 직계 형제 키(2-space) 레벨로 쓰여, 스프링 부트 구동 시 데이터베이스 인증 정보가 빈값으로 주입되어 로컬 H2 및 실제 DB 연동이 누락되는 상태였음.
+- **해결**:
+  공통 설정 문서 내 H2 및 MySQL datasource의 자식 속성 들여쓰기를 표준 명세 포맷(4-space)에 맞게 정렬하여 DB 연동 안전성을 복원함.
+- **상세 기록**: [2026-07-24 개발 로그](project-log/2026-07-24.md)
+
+## 6. 비동기 API 호출 시 이전 레이턴시 요청의 화면 덮어쓰기(Race Condition)
+
+- **발생일**: 2026-07-24
+- **요약**: 볼카운트 및 주자 상황을 빠르게 조작할 때 이전 요청의 느린 응답이 최신 조언을 덮어씌우는 프론트 정합성 불일치 조치
+- **원인**:
+  Vite React 프론트엔드가 백엔드 API를 500ms 디바운스(Debounce) 형태로 비동기 호출하더라도, 이전 호출이 네트워크 통신 중일 때 새로운 상태 입력이 일어나면 이전의 느린 통신 응답이 최종 도착해 최신 상황의 조언을 덮어쓰는 레이스 컨디션이 발생함.
+- **해결**:
+  React `useEffect` 내부에 `AbortController`를 선언하고 fetch API에 `signal`을 주입하여, 타이머 취소 및 컴포넌트 언마운트 시 **이전 비동기 API 통신을 즉시 취소(`abort()`)**하도록 하여 최신 화면의 무결성을 확보함.
+- **상세 기록**: [2026-07-24 개발 로그](project-log/2026-07-24.md)
+
+## 7. 백엔드 예외처리 범위 광역화로 인한 내부 결함의 위장 버그 (500 vs 503)
+
+- **발생일**: 2026-07-24
+- **요약**: 백엔드 전술 API에서 모든 예외를 503으로 리턴하여 내부 런타임 버그의 디버깅이 가로막혔던 오류 조치
+- **원인**:
+  `CoachController`의 조언 API에서 일반 `Exception`을 한 번에 잡아 `503 Service Unavailable`로 내보내면서, 개발자 실수로 발생할 수 있는 내부 `NullPointerException` 같은 자바 에러까지 AI API 일시 불능으로 포장되어 시스템의 논리 버그가 디버깅에서 감춰짐.
+- **해결**:
+  AI 서버 연동 시 실제로 발생하는 예외들(`TransientAiException`, `NonTransientAiException`, `RestClientException`)만 503 장애로 가공하도록 좁히고, 그 외 예상치 못한 내부 런타임 오류는 WAS로 그대로 던져 정석적인 `500 Internal Server Error`로 분류 및 명확히 디버깅되도록 분류함.
+- **상세 기록**: [2026-07-24 개발 로그](project-log/2026-07-24.md)
+
 ## 💡 참고 사항
 
-- 로컬 실행 환경 및 기본 구조 분석은 [프론트엔드 구축 완료 보고서](baseball_documents/walkthrough.md)를 참고하세요.
+- 로컬 실행 환경 및 기본 구조 분석은 [프론트엔드 구축 완료 보고서](walkthrough.md)를 참고하세요.
 - 새로운 트러블슈팅 이력은 날짜별 로그에 기록을 작성한 뒤, 이 색인 문서에 추가합니다.
