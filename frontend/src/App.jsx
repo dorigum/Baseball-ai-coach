@@ -345,6 +345,18 @@ function App() {
   const [hitLocation, setHitLocation] = useState(null);
   const [aiAdvice, setAiAdvice] = useState('');
   const abortControllerRef = useRef(null);
+  const [modal, setModal] = useState({
+    isOpen: false,
+    title: '',
+    message: '',
+    type: 'warning'
+  });
+  const showModal = (title, message, type = 'warning') => {
+    setModal({ isOpen: true, title, message, type });
+  };
+  const closeModal = () => {
+    setModal(prev => ({ ...prev, isOpen: false }));
+  };
 
   // 경기 설정 상태
   const [gameInfo, setGameInfo] = useState({

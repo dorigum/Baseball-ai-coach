@@ -145,8 +145,17 @@
   `App.jsx`에 모달 가시성 상태(`isOpen`, `title`, `message`, `type`)를 신설하고, 뒷배경을 흐리게 처리하는 `backdrop-blur-sm` 및 에러/경고 아이콘 타입별 컬러 포인트를 지닌 세련된 다크 테마 Glassmorphism 모달을 설계하여 서비스 전역의 `alert()`를 커스텀 `showModal()`로 전면 보정 교체함.
 - **상세 기록**: [2026-07-24 개발 로그](project-log/2026-07-24.md)
 
+## 15. git checkout 롤백 과정에서의 모달 상태 선언부 유실 및 런타임 ReferenceError
+
+- **발생일**: 2026-07-24
+- **요약**: 깨진 구식 useEffect 찌꺼기를 정리하기 위해 git checkout 롤백을 진행하는 과정에서 새로 추가했던 모달 선언부가 날아가 발생한 런타임 uncaught ReferenceError 에러 조치
+- **원인**:
+  `git checkout -- App.jsx` 복구를 통해 코드 구조를 예전 상태로 롤백하는 도중, React 컴포넌트 내부에 탑재했던 `modal` 상태 정의와 `showModal`/`closeModal` 함수 블록이 미처 커밋되지 않은 상태여서 누락 유실됨. 이로 인해 브라우저 콘솔에서 `showModal is not defined` 크래시를 내고 전체 화면 렌더링이 다운(백화 현상)됨.
+- **해결**:
+  `App.jsx` 내 `abortControllerRef` 선언부 바로 아래에 모달 가시성 상태(`modal` state) 및 공용 트리거 헬퍼 함수들(`showModal`, `closeModal`)을 완벽하게 재건해 기입하여 렌더러 기능 복원 완료.
+- **상세 기록**: [2026-07-24 개발 로그](project-log/2026-07-24.md)
+
 ## 💡 참고 사항
 
 - 로컬 실행 환경 및 기본 구조 분석은 [프론트엔드 구축 완료 보고서](walkthrough.md)를 참고하세요.
 - 새로운 트러블슈팅 이력은 날짜별 로그에 기록을 작성한 뒤, 이 색인 문서에 추가합니다.
-
