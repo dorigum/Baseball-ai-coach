@@ -1166,7 +1166,7 @@ function App() {
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans pb-12">
-      <header className="sticky top-0 z-50 bg-slate-950/80 backdrop-blur-md border-b border-white/10 px-6 py-4 flex flex-col md:flex-row items-center justify-between gap-4 shadow-lg">
+      <header className="sticky top-0 z-50 bg-slate-950/80 backdrop-blur-md border-b border-white/10 px-6 py-4 flex flex-col lg:flex-row items-center justify-between gap-4 shadow-lg">
         <div className="flex items-center gap-3">
           <img 
             src="/favicon_baseball_ai.jpg" 
@@ -1180,7 +1180,7 @@ function App() {
             <p className="text-[10px] text-slate-400 font-semibold whitespace-nowrap">데이터 기반 야구 전술 의사결정 서포터</p>
           </div>
         </div>
-        <div className="flex flex-wrap items-center justify-center md:justify-end gap-3 w-full md:w-auto">
+        <div className="flex flex-wrap items-center justify-center lg:justify-end gap-3 w-full lg:w-auto">
           {/* [NEW] 소셜 로그인 / 사용자 정보 표시 UI */}
           {user ? (
             <div className="flex items-center gap-3 bg-slate-900/60 border border-white/5 rounded-xl py-1 px-3 shadow-inner">
@@ -1328,7 +1328,7 @@ function App() {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start w-full">
           <div className="lg:col-span-5 flex flex-col gap-6 items-center w-full">
             {/* 상단 분리형 가이드 및 전광판 정보 카드 */}
-            <div className="w-full max-w-[500px] bg-slate-900/80 border border-white/10 p-5 rounded-2xl flex justify-between items-center text-xs backdrop-blur-md shadow-xl">
+            <div className="w-full bg-slate-900/80 border border-white/10 p-5 rounded-2xl flex justify-between items-center text-xs backdrop-blur-md shadow-xl">
               <div className="text-slate-300 leading-relaxed font-semibold">
                 📢 <span className="text-emerald-400 font-bold">수비수</span> 드래그 시프트 조절<br/>
                 🏟️ <span className="text-amber-400 font-bold">필드</span> 클릭 타구 좌표 지정
@@ -1348,7 +1348,7 @@ function App() {
               </div>
             </div>
 
-            <div className="w-full max-w-[500px] bg-slate-900/80 border border-white/10 p-5 rounded-2xl backdrop-blur-md shadow-2xl flex flex-col items-center justify-center">
+            <div className="w-full aspect-square shrink-0 bg-slate-900/80 border border-white/10 p-0 rounded-2xl backdrop-blur-md shadow-2xl flex flex-col items-center justify-center overflow-hidden">
               <BaseballField
                 positions={positions}
                 onPositionChange={handlePositionChange}

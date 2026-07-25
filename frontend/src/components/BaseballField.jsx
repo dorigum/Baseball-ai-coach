@@ -168,7 +168,7 @@ const BaseballField = ({
   };
 
   return (
-    <div className="relative w-full aspect-square rounded-xl overflow-hidden bg-slate-950/60">
+    <div className="relative w-full h-full overflow-hidden bg-transparent">
 
 
       {/* 수비수 호버 툴팁 엘리먼트 */}
