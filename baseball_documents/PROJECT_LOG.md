@@ -10,6 +10,8 @@ Baseball AI Coach 프로젝트의 개발 여정과 기술 스택 마이그레이
 
 ## 📅 날짜별 개발 기록
 
+- [2026-07-26](project-log/2026-07-26.md):
+  - **Firebase Hosting 분리 배포**: Baseball AI Coach 프론트엔드를 CodeTrip Firebase 프로젝트에서 분리하여 신규 프로젝트 `baseball-coach-ai`에 배포. 배포 URL `https://baseball-coach-ai.web.app` 정상 응답 확인 및 `frontend/.firebaserc` 기본 프로젝트 설정 갱신.
 - [2026-07-25](project-log/2026-07-25.md): 
   - **문서화**: 문서 작성 규칙 가이드(Document_Guide.md) 도입 및 프로젝트 로그 인덱싱 구조화.
   - **시뮬레이터 고도화**: 방송 스타일 실시간 팀 점수판, 타자 종합 세션 기록 카드, 수비/공격 라인업 포지션 변경(스왑), KBO 10개 구단 및 커스텀 구단 직접 기입 기능(기본 라인업 자동 할당 템플릿 포함) 구현. 로컬 스토리지(`localStorage`) 연계를 통한 새로고침(F5) 세션 영속성 및 전체 데이터 초기화 기능 탑재.

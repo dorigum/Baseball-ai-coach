@@ -3,6 +3,7 @@ import BaseballField from './components/BaseballField';
 import PlayInputPanel from './components/PlayInputPanel';
 import Dashboard from './components/Dashboard';
 import { loginWithGoogle, logout, isMockAuth } from './firebase';
+import { ArrowUp } from 'lucide-react';
 
 const initialPositions = {
   P: { x: 250, y: 340 },
@@ -339,6 +340,7 @@ const initialLogs = [
 ];
 
 function App() {
+  const [showTopButton, setShowTopButton] = useState(false);
   const [positions, setPositions] = useState(() => {
     const saved = localStorage.getItem('baseball_positions');
     return saved ? JSON.parse(saved) : initialPositions;
@@ -376,6 +378,20 @@ function App() {
   };
   const closeModal = () => {
     setModal(prev => ({ ...prev, isOpen: false }));
+  };
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setShowTopButton(window.scrollY > 420);
+    };
+
+    handleScroll();
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  const handleScrollTop = () => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   // [NEW] 회원 인증 관련 상태 선언 및 Lazy Loading 지원
@@ -1394,6 +1410,33 @@ function App() {
         </div>
       </main>
 
+      <footer className="mt-12 border-t border-white/10 bg-slate-950/80 px-6 py-10 text-center">
+        <p className="text-sm font-semibold text-slate-400">
+          © 2026 Doyeon · Built with <span className="text-amber-300">⚾</span> using React & Vite. All rights reserved.
+        </p>
+        <a
+          href="https://github.com/dorigum/Baseball-ai-coach"
+          target="_blank"
+          rel="noreferrer"
+          className="mt-3 inline-flex items-center justify-center gap-1.5 text-xs font-bold text-emerald-400 transition-colors hover:text-emerald-300"
+        >
+          <svg aria-hidden="true" className="h-3.5 w-3.5 fill-current">
+            <use href="/icons.svg#github-icon" />
+          </svg>
+          Developer Polar bear 빼꼼🐻‍❄️_GitHub Repo.
+        </a>
+      </footer>
+
+      <button
+        type="button"
+        onClick={handleScrollTop}
+        aria-label="맨 위로 이동"
+        className={`fixed bottom-7 right-7 z-50 flex h-12 w-12 items-center justify-center rounded-full border border-emerald-300/30 bg-emerald-500 text-slate-950 shadow-lg shadow-emerald-500/25 transition-all duration-300 hover:-translate-y-1 hover:bg-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-300 focus:ring-offset-2 focus:ring-offset-slate-950 ${
+          showTopButton ? 'opacity-100 translate-y-0' : 'pointer-events-none opacity-0 translate-y-3'
+        }`}
+      >
+        <ArrowUp size={22} strokeWidth={2.4} />
+      </button>
       {/* 커스텀 다크 모드 Glassmorphism 알림 모달 */}
       {modal.isOpen && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/70 backdrop-blur-sm animate-[fadeIn_0.2s_ease-out]">
