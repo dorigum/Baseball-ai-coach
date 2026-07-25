@@ -87,9 +87,29 @@ npm run dev
 * **실행 시 환경 변수 설정 (IDE 또는 OS Terminal)**:
   * Gemini API 호출을 위해 OS 또는 실행 구성에 `GEMINI_API_KEY` 환경 변수를 추가하십시오.
   * **Windows PowerShell 실행 예시**:
-    ```powershell
-    $env:GEMINI_API_KEY="AI_Studio에서_발급받은_실제_키_값"
-    # IntelliJ 등 IDE에서 run을 실행하거나, 터미널 환경에 gradle이 설치되어 있다면:
-    # gradle bootRun
-    ```
+```powershell
+$env:GEMINI_API_KEY="AI_Studio에서_발급받은_실제_키_값"
+# IntelliJ 등 IDE에서 run을 실행하거나, 터미널 환경에 gradle이 설치되어 있다면:
+# gradle bootRun
+```
+
   * 기본 실행 시 In-Memory H2 DB를 사용하며, [http://localhost:8080/h2-console](http://localhost:8080/h2-console) (JDBC URL: `jdbc:h2:mem:baseballdb`, ID: `sa`)로 데이터 테이블 상태를 웹 브라우저에서 편리하게 점검할 수 있습니다.
+
+---
+
+## 🔒 3단계 (추가): 소셜 로그인 및 회원제 연동
+
+본 마일스톤을 통해 **Firebase Authentication(Google) 소셜 로그인**과 백엔드 **Member DB 연동**을 완료했습니다.
+
+### 1. 인증 방식 구성
+- **Google 소셜 로그인**: 프론트엔드 헤더의 로그인/로그아웃 버튼을 통해 인증 토큰(Bearer JWT)을 획득합니다.
+- **인증 헤더**: 로그인한 상태라면 모든 전술 조언(`/api/coach/advice`) 및 투구 기록 저장(`/api/coach/pitch`) API 요청 헤더에 `Authorization: Bearer <Token>` 형태로 주입됩니다.
+- **회원 정보 영속화**: 백엔드는 토큰을 검증해 JPA `Member` 테이블에 회원 이력(UID, 이메일, 닉네임, 프로필, 선호 구단)을 생성/관리하며, 각 `Game` 테이블에 회원 ID를 외래키로 바인딩하여 전력 분석 이력을 개인화 격리 관리합니다.
+
+### 2. 로컬 개발 편의를 위한 Mock(가상) 인증 가이드
+Firebase 설정 파일 및 API 키가 없는 로컬 개발/테스트 장비에서도 모든 회원제 기능(로그인, 구단 동기화, 사용자별 경기 격리 DB 보관)을 검증할 수 있도록 **Mock 바이패스 모드**가 구축되어 있습니다.
+
+- **프론트엔드**: `frontend/.env` 파일 내 `VITE_FIREBASE_API_KEY`가 예시 상태(`YOUR_API_KEY` 등)이거나 비어있다면, 자동으로 Mock 모드가 발동하여 로그인 클릭 시 구글 창을 띄우지 않고 가상 계정(`Mock 테스트 주자` / `mock-user-123`)으로 로그인을 완료 처리합니다.
+- **백엔드**: `FIREBASE_CONFIG_PATH` 환경 변수가 유실되었거나 설정이 유효하지 않으면, 부팅 시 `Mock 인증 모드`로 기동됩니다. 프론트엔드가 요청과 함께 보내오는 가상 토큰을 `FirebaseAuthFilter` 가 즉시 통과시키며, DB에 가상 회원으로 등록합니다.
+- **실서버 연동 전환**: 운영계 배포 시 프론트엔드 `.env` 파일과 백엔드 `FIREBASE_CONFIG_PATH` 시스템 환경변수에 실제 취득한 구글 인증 키 정보만 기입해주면 코드 수정 전혀 없이 즉시 실서버 모드로 전환됩니다.
+

@@ -8,8 +8,11 @@ import java.util.List;
 
 public interface PitchRecordRepository extends JpaRepository<PitchRecord, Long> {
     List<PitchRecord> findByPlateAppearanceGameId(Long gameId);
+    List<PitchRecord> findByPlateAppearanceGameMemberUid(String uid);
+    List<PitchRecord> findByPlateAppearanceGameMemberIsNull();
+    List<PitchRecord> findByPlateAppearanceGameIdAndPlateAppearanceGameMemberUid(Long gameId, String uid);
+    List<PitchRecord> findByPlateAppearanceGameIdAndPlateAppearanceGameMemberIsNull(Long gameId);
     
-    // 특정 경기(Game)에서 특정 투수가 던진 투구의 종류 분포 통계용 커스텀 쿼리 예시
     @Query("SELECT pr.pitchType, COUNT(pr) FROM PitchRecord pr " +
            "JOIN pr.plateAppearance pa " +
            "WHERE pa.game.id = :gameId AND pa.pitcher.id = :pitcherId " +

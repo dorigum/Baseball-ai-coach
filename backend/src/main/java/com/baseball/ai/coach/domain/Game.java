@@ -32,4 +32,8 @@ public class Game {
     private Integer ourScore;
 
     private Integer opponentScore;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "member_id")
+    private Member member;
 }

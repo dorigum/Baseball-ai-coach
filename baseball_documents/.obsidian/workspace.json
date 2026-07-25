@@ -190,7 +190,8 @@
       }
     ],
     "direction": "horizontal",
-    "width": 365.5
+    "width": 365.5,
+    "collapsed": true
   },
   "left-ribbon": {
     "hiddenItems": {
@@ -206,17 +207,22 @@
       "periodic-notes:Open today": false
     }
   },
-  "active": "8c910f5f1e9b08cb",
+  "active": "d3c76af91bb870c5",
   "lastOpenFiles": [
-    "project-log/2026-07-24.md",
+    "project-log/2026-07-25.md",
+    "TROUBLESHOOTING.md",
     "PROJECT_LOG.md",
+    "guides/Document_Guide.md",
+    "guides/Guide.md",
+    "project-log/2026-07-24.md",
+    "guides/walkthrough.md",
+    "walkthrough.md",
     "project-log/2026-07-23.md",
     "project-log/2026-07-20.md",
     "project-log/2026-07-21.md",
     "project-log/2026-07-22.md",
     "2026-07-23.md",
     "attachments",
-    "TROUBLESHOOTING.md",
     "Untitled.canvas",
     "Untitled.base"
   ]

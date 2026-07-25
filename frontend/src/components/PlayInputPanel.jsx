@@ -9,6 +9,7 @@ const PlayInputPanel = ({
   onCountChange,
   runners,
   onRunnerToggle,
+  onRunnerNameChange,
   hitLocation,
   onSubmitRecord,
   onTriggerAiAnalysis,
@@ -26,8 +27,10 @@ const PlayInputPanel = ({
     { name: '수원 KT위즈파크', desc: '💨 외야가 다소 짧아 홈런 발생률 보통 이상' }
   ];
 
+  const kboTeams = ['LG', 'KIA', '두산', '삼성', 'SSG', '한화', 'KT', '롯데', 'NC', '키움', '기타'];
+
   const pitchTypes = [
-    { label: '속구 (Fastball)', value: 'Fastball', color: 'bg-red-500/20 text-red-400 border-red-500/40 hover:bg-red-500/30' },
+    { label: '직구 (Fastball)', value: 'Fastball', color: 'bg-red-500/20 text-red-400 border-red-500/40 hover:bg-red-500/30' },
     { label: '슬라이더 (Slider)', value: 'Slider', color: 'bg-blue-500/20 text-blue-400 border-blue-500/40 hover:bg-blue-500/30' },
     { label: '커브 (Curve)', value: 'Curve', color: 'bg-amber-500/20 text-amber-400 border-amber-500/40 hover:bg-amber-500/30' },
     { label: '체인지업 (Changeup)', value: 'Changeup', color: 'bg-purple-500/20 text-purple-400 border-purple-500/40 hover:bg-purple-500/30' },
@@ -105,6 +108,12 @@ const PlayInputPanel = ({
   const attackingTeam = isTop ? gameInfo.opponentTeam : gameInfo.myTeam;
   const defendingTeam = isTop ? gameInfo.myTeam : gameInfo.opponentTeam;
 
+  const standardTeams = ['LG', 'KIA', '두산', '삼성', 'SSG', '한화', 'KT', '롯데', 'NC', '키움'];
+  const isMyTeamCustom = !standardTeams.includes(gameInfo.myTeam);
+  const isOpponentTeamCustom = !standardTeams.includes(gameInfo.opponentTeam);
+  const isPitcherTeamCustom = !standardTeams.includes(pitchInfo.pitcherTeam);
+  const isBatterTeamCustom = !standardTeams.includes(pitchInfo.batterTeam);
+
   return (
     <div className="flex flex-col gap-5 w-full bg-slate-900/60 border border-white/10 p-6 rounded-2xl backdrop-blur-md shadow-2xl">
       <div className="flex items-center justify-between border-b border-white/5 pb-4">
@@ -155,23 +164,45 @@ const PlayInputPanel = ({
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="block text-[10px] font-semibold text-slate-500 mb-1 uppercase tracking-wider">My Team (기준 구단)</label>
-              <input
-                type="text"
-                placeholder="예: LG, 한화"
-                className="w-full bg-slate-900 border border-white/10 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-emerald-500 placeholder-slate-600 font-semibold"
-                value={gameInfo.myTeam}
+              <select
+                className="w-full bg-slate-900 border border-white/10 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-emerald-500 font-semibold"
+                value={isMyTeamCustom ? '기타' : gameInfo.myTeam}
                 onChange={(e) => handleGameInfoChange('myTeam', e.target.value)}
-              />
+              >
+                {kboTeams.map((t) => (
+                  <option key={t} value={t}>{t}</option>
+                ))}
+              </select>
+              {isMyTeamCustom && (
+                <input
+                  type="text"
+                  placeholder="구단명 직접 입력"
+                  className="w-full bg-slate-900 border border-emerald-500/30 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-emerald-500 font-semibold mt-1.5 animate-fade-in"
+                  value={gameInfo.myTeam === '기타' ? '' : gameInfo.myTeam}
+                  onChange={(e) => handleGameInfoChange('myTeam', e.target.value || '기타')}
+                />
+              )}
             </div>
             <div>
               <label className="block text-[10px] font-semibold text-slate-500 mb-1 uppercase tracking-wider">Opponent (상대 구단)</label>
-              <input
-                type="text"
-                placeholder="예: KIA, 두산"
-                className="w-full bg-slate-900 border border-white/10 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-emerald-500 placeholder-slate-600 font-semibold"
-                value={gameInfo.opponentTeam}
+              <select
+                className="w-full bg-slate-900 border border-white/10 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-emerald-500 font-semibold"
+                value={isOpponentTeamCustom ? '기타' : gameInfo.opponentTeam}
                 onChange={(e) => handleGameInfoChange('opponentTeam', e.target.value)}
-              />
+              >
+                {kboTeams.map((t) => (
+                  <option key={t} value={t}>{t}</option>
+                ))}
+              </select>
+              {isOpponentTeamCustom && (
+                <input
+                  type="text"
+                  placeholder="구단명 직접 입력"
+                  className="w-full bg-slate-900 border border-emerald-500/30 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-emerald-500 font-semibold mt-1.5 animate-fade-in"
+                  value={gameInfo.opponentTeam === '기타' ? '' : gameInfo.opponentTeam}
+                  onChange={(e) => handleGameInfoChange('opponentTeam', e.target.value || '기타')}
+                />
+              )}
             </div>
           </div>
 
@@ -247,14 +278,25 @@ const PlayInputPanel = ({
               value={pitchInfo.pitcherName}
               onChange={(e) => handleInputChange('pitcherName', e.target.value)}
             />
+            <select
+              className="bg-slate-950/80 border border-white/10 rounded-xl px-1 py-2 text-white focus:outline-none focus:border-emerald-500 text-xs font-semibold text-center font-mono"
+              value={isPitcherTeamCustom ? '기타' : pitchInfo.pitcherTeam}
+              onChange={(e) => handleInputChange('pitcherTeam', e.target.value)}
+            >
+              {kboTeams.map((t) => (
+                <option key={t} value={t}>{t}</option>
+              ))}
+            </select>
+          </div>
+          {isPitcherTeamCustom && (
             <input
               type="text"
-              className="bg-slate-950/80 border border-white/10 rounded-xl px-2 py-2 text-white placeholder-slate-600 focus:outline-none focus:border-emerald-500 text-xs font-semibold text-center"
-              placeholder="팀"
-              value={pitchInfo.pitcherTeam}
-              onChange={(e) => handleInputChange('pitcherTeam', e.target.value)}
+              placeholder="투수 팀 직접 입력"
+              className="w-full bg-slate-950/80 border border-emerald-500/30 rounded-xl px-3 py-1.5 text-white placeholder-slate-600 focus:outline-none focus:border-emerald-500 text-xs font-semibold mt-1 animate-fade-in"
+              value={pitchInfo.pitcherTeam === '기타' ? '' : pitchInfo.pitcherTeam}
+              onChange={(e) => handleInputChange('pitcherTeam', e.target.value || '기타')}
             />
-          </div>
+          )}
         </div>
         <div className="flex flex-col gap-1.5">
           <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider">Batter (타자)</label>
@@ -266,14 +308,25 @@ const PlayInputPanel = ({
               value={pitchInfo.batterName}
               onChange={(e) => handleInputChange('batterName', e.target.value)}
             />
+            <select
+              className="bg-slate-950/80 border border-white/10 rounded-xl px-1 py-2 text-white focus:outline-none focus:border-emerald-500 text-xs font-semibold text-center font-mono"
+              value={isBatterTeamCustom ? '기타' : pitchInfo.batterTeam}
+              onChange={(e) => handleInputChange('batterTeam', e.target.value)}
+            >
+              {kboTeams.map((t) => (
+                <option key={t} value={t}>{t}</option>
+              ))}
+            </select>
+          </div>
+          {isBatterTeamCustom && (
             <input
               type="text"
-              className="bg-slate-950/80 border border-white/10 rounded-xl px-2 py-2 text-white placeholder-slate-600 focus:outline-none focus:border-emerald-500 text-xs font-semibold text-center"
-              placeholder="팀"
-              value={pitchInfo.batterTeam}
-              onChange={(e) => handleInputChange('batterTeam', e.target.value)}
+              placeholder="타자 팀 직접 입력"
+              className="w-full bg-slate-950/80 border border-emerald-500/30 rounded-xl px-3 py-1.5 text-white placeholder-slate-600 focus:outline-none focus:border-emerald-500 text-xs font-semibold mt-1 animate-fade-in"
+              value={pitchInfo.batterTeam === '기타' ? '' : pitchInfo.batterTeam}
+              onChange={(e) => handleInputChange('batterTeam', e.target.value || '기타')}
             />
-          </div>
+          )}
         </div>
       </div>
 
@@ -335,18 +388,32 @@ const PlayInputPanel = ({
 
         <div className="flex flex-col gap-2">
           <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">주자 상황</span>
-          <div className="flex flex-col gap-2 mt-1">
-            {['first', 'second', 'third'].map((base, idx) => (
-              <label key={base} className="flex items-center gap-3 cursor-pointer group text-xs text-slate-300 hover:text-white transition-colors">
-                <input
-                  type="checkbox"
-                  checked={runners[base]}
-                  onChange={() => onRunnerToggle(base)}
-                  className="rounded bg-slate-900 border-slate-700 text-orange-500 focus:ring-orange-500/20 w-4 h-4 cursor-pointer"
-                />
-                <span className="font-semibold">{idx + 1}루 주자</span>
-              </label>
-            ))}
+          <div className="flex flex-col gap-2.5 mt-1">
+            {['first', 'second', 'third'].map((base, idx) => {
+              const hasRunner = !!runners[base];
+              return (
+                <div key={base} className="flex items-center gap-2 text-xs">
+                  <label className="flex items-center gap-2 cursor-pointer group text-slate-300 hover:text-white transition-colors select-none">
+                    <input
+                      type="checkbox"
+                      checked={hasRunner}
+                      onChange={() => onRunnerToggle(base)}
+                      className="rounded bg-slate-900 border-slate-700 text-orange-500 focus:ring-orange-500/20 w-4 h-4 cursor-pointer"
+                    />
+                    <span className="font-semibold w-11">{idx + 1}루 주자</span>
+                  </label>
+                  {hasRunner && (
+                    <input
+                      type="text"
+                      placeholder="주자 이름"
+                      className="bg-slate-950 border border-orange-500/30 rounded-lg px-2 py-0.5 text-[11px] text-white focus:outline-none focus:border-orange-500 font-bold w-24 placeholder-slate-700 animate-fade-in"
+                      value={runners[base] === '주자' ? '' : runners[base]}
+                      onChange={(e) => onRunnerNameChange(base, e.target.value || '주자')}
+                    />
+                  )}
+                </div>
+              );
+            })}
           </div>
         </div>
       </div>
