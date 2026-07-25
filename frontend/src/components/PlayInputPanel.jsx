@@ -128,7 +128,7 @@ const PlayInputPanel = ({
         <summary className="text-xs font-bold text-emerald-400 cursor-pointer list-none flex items-center justify-between select-none">
           <span>🏟️ 경기 정보 설정 (구단 매칭 및 이닝 정보)</span>
           <div className="flex items-center gap-2">
-            <span className="text-[10px] bg-emerald-950 text-emerald-400 border border-emerald-500/20 px-2 py-0.5 rounded font-mono font-bold">
+            <span className="text-[10px] bg-emerald-950 text-emerald-400 border border-emerald-500/20 px-2 py-0.5 rounded font-sans font-bold">
               {gameInfo.myTeam} vs {gameInfo.opponentTeam} | {gameInfo.inning}회{gameInfo.inningHalf}
             </span>
             <span className="text-[10px] text-slate-500 group-open:rotate-180 transition-transform">▼</span>

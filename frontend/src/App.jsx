@@ -1334,7 +1334,7 @@ function App() {
                 🏟️ <span className="text-amber-400 font-bold">필드</span> 클릭 타구 좌표 지정
               </div>
               <div className="flex flex-col items-end gap-1.5 border-l border-white/10 pl-4">
-                <span className="text-[10px] text-emerald-400 font-extrabold font-mono tracking-wider">
+                <span className="text-[10px] text-emerald-400 font-extrabold font-sans tracking-wider">
                   🏟️ {gameInfo.stadium.split(' ')[0]} | {gameInfo.inning}회{gameInfo.inningHalf}
                 </span>
                 <div className="flex gap-1.5 text-[9px] font-bold">
@@ -1348,7 +1348,7 @@ function App() {
               </div>
             </div>
 
-            <div className="w-full aspect-square shrink-0 bg-slate-900/80 border border-white/10 p-0 rounded-2xl backdrop-blur-md shadow-2xl flex flex-col items-center justify-center overflow-hidden">
+            <div className="w-full aspect-square shrink-0 bg-slate-900/80 border border-white/10 p-16 rounded-2xl backdrop-blur-md shadow-2xl flex flex-col items-center justify-center overflow-hidden">
               <BaseballField
                 positions={positions}
                 onPositionChange={handlePositionChange}

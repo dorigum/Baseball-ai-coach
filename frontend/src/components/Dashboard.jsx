@@ -530,18 +530,18 @@ const Dashboard = ({
                       <span className="text-sm font-extrabold text-white">{stat.name}</span>
                       <span className="text-[10px] text-slate-400 ml-1.5">({stat.team})</span>
                     </div>
-                    <div className="bg-emerald-950/60 text-emerald-400 border border-emerald-500/20 px-2 py-0.5 rounded text-[10px] font-mono font-bold">
+                    <div className="bg-emerald-950/60 text-emerald-400 border border-emerald-500/20 px-2 py-0.5 rounded text-[10px] font-sans font-bold">
                       타율 {avg}
                     </div>
                   </div>
                   <div className="grid grid-cols-4 gap-2 text-center text-xs font-semibold">
                     <div className="bg-slate-900/40 p-1.5 rounded border border-white/5">
                       <div className="text-[10px] text-slate-500 font-extrabold">타석</div>
-                      <div className="text-sm text-slate-200 font-bold font-mono">{stat.pa}</div>
+                      <div className="text-sm text-slate-200 font-bold font-sans">{stat.pa}</div>
                     </div>
                     <div className="bg-slate-900/40 p-1.5 rounded border border-white/5">
                       <div className="text-[10px] text-slate-500 font-extrabold">타수</div>
-                      <div className="text-sm text-slate-200 font-bold font-mono">{stat.ab}</div>
+                      <div className="text-sm text-slate-200 font-bold font-sans">{stat.ab}</div>
                     </div>
                     <div className="bg-slate-900/40 p-1.5 rounded border border-white/5">
                       <div className="text-[10px] text-slate-500 font-extrabold">안타</div>

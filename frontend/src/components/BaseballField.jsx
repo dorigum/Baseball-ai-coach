@@ -340,11 +340,11 @@ const BaseballField = ({
           x="250" 
           y="28" 
           textAnchor="middle" 
-          fontSize="10" 
-          fontWeight="black" 
+          fontSize="9" 
+          fontWeight="bold" 
           fill="#fbbf24" 
           opacity="0.95"
-          className="select-none pointer-events-none tracking-widest font-mono"
+          className="select-none pointer-events-none tracking-widest font-sans"
         >
           🏆 홈런 구역 (HR ZONE)
         </text>
