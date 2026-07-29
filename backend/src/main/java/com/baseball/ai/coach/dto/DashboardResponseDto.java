@@ -31,6 +31,7 @@ public class DashboardResponseDto {
         private String playResult;
         private Double hitLocationX;
         private Double hitLocationY;
+        private Integer pitchZone;
     }
 
     @Getter

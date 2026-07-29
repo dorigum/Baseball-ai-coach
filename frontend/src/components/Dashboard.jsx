@@ -217,6 +217,76 @@ const Dashboard = ({
 
   const batterStats = getBatterStats();
 
+  // [NEW] 13분할 투구 코스 빈도수 및 핫코스 계산
+  const getZoneStats = () => {
+    const zoneCounts = Array(14).fill(0);
+    const zoneTypeMap = Array(14).fill(null).map(() => ({}));
+    let total = 0;
+
+    const zoneLabels = {
+      1: '상좌', 2: '상중', 3: '상우',
+      4: '중좌', 5: '한가운데', 6: '중우',
+      7: '하좌', 8: '하중', 9: '하우',
+      10: '높은볼', 11: '우측볼', 12: '낮은볼', 13: '좌측볼'
+    };
+
+    pitchLogs.forEach((log) => {
+      const zone = log.pitchZone;
+      if (zone >= 1 && zone <= 13) {
+        zoneCounts[zone] += 1;
+        total += 1;
+        
+        // 구종 카운트 매핑
+        if (log.pitchType) {
+          zoneTypeMap[zone][log.pitchType] = (zoneTypeMap[zone][log.pitchType] || 0) + 1;
+        }
+      }
+    });
+
+    // 핫 코스 정렬 계산 (투구가 존재한 구역 대상 내림차순 정렬)
+    const hotZones = [];
+    for (let i = 1; i <= 13; i++) {
+      if (zoneCounts[i] > 0) {
+        // 해당 구역에서 가장 많이 던진 주요 구종 계산
+        const types = zoneTypeMap[i];
+        let mainType = '-';
+        let mainCount = 0;
+        Object.entries(types).forEach(([type, count]) => {
+          if (count > mainCount) {
+            mainType = type;
+            mainCount = count;
+          }
+        });
+
+        hotZones.push({
+          zone: i,
+          count: zoneCounts[i],
+          label: zoneLabels[i],
+          mainType,
+          mainCount
+        });
+      }
+    }
+
+    hotZones.sort((a, b) => b.count - a.count);
+
+    return { zoneCounts, totalZonePitches: total, hotZones };
+  };
+
+  const { zoneCounts, totalZonePitches, hotZones } = getZoneStats();
+
+  const getZoneInlineStyle = (num) => {
+    const count = zoneCounts[num] || 0;
+    if (count === 0) return {};
+    const ratio = totalZonePitches > 0 ? count / totalZonePitches : 0;
+    const opacity = 0.15 + ratio * 0.75; // 15% ~ 90% opacity
+    if (num <= 9) {
+      return { backgroundColor: `rgba(239, 68, 68, ${opacity})` };
+    } else {
+      return { backgroundColor: `rgba(245, 158, 11, ${opacity})` };
+    }
+  };
+
   return (
     <div className="flex flex-col gap-6 w-full">
       {/* 1. AI 전술 분석 코치 패널 */}
@@ -512,6 +582,145 @@ const Dashboard = ({
             </div>
           )}
         </div>
+      </div>
+
+      {/* [NEW] 5. 투구 코스 분포 히트맵 (Strike Zone Heatmap Analysis) */}
+      <div className="bg-slate-900/60 border border-white/10 p-5 rounded-2xl backdrop-blur-md">
+        <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-4 flex items-center gap-1.5">
+          🎯 투구 코스 분포 히트맵 (Strike Zone Heatmap Analysis)
+        </h3>
+        
+        {pitchLogs.length > 0 ? (
+          <div className="flex flex-col lg:flex-row items-center justify-between gap-8 mt-2">
+            {/* 좌측: 13분할 히트맵 그리드 */}
+            <div className="w-full max-w-[260px] aspect-square grid grid-cols-5 grid-rows-5 gap-1.5 p-1 bg-slate-950/40 border border-white/5 rounded-2xl relative select-none">
+              {/* 모서리 빈 곳 */}
+              <div className="grid-row-1 grid-column-1 flex items-center justify-center text-[9px] text-slate-800 font-extrabold uppercase font-sans">Ball</div>
+              <div className="grid-row-1 grid-column-5 flex items-center justify-center text-[9px] text-slate-800 font-extrabold uppercase font-sans">Ball</div>
+              <div className="grid-row-5 grid-column-1 flex items-center justify-center text-[9px] text-slate-800 font-extrabold uppercase font-sans">Ball</div>
+              <div className="grid-row-5 grid-column-5 flex items-center justify-center text-[9px] text-slate-800 font-extrabold uppercase font-sans">Ball</div>
+
+              {/* 3x3 스트라이크 존 */}
+              {[
+                { num: 1, row: 2, col: 2, label: '상좌' },
+                { num: 2, row: 2, col: 3, label: '상중' },
+                { num: 3, row: 2, col: 4, label: '상우' },
+                { num: 4, row: 3, col: 2, label: '중좌' },
+                { num: 5, row: 3, col: 3, label: '한가운데' },
+                { num: 6, row: 3, col: 4, label: '중우' },
+                { num: 7, row: 4, col: 2, label: '하좌' },
+                { num: 8, row: 4, col: 3, label: '하중' },
+                { num: 9, row: 4, col: 4, label: '하우' }
+              ].map((sz) => {
+                const count = zoneCounts[sz.num] || 0;
+                const style = getZoneInlineStyle(sz.num);
+                const hasData = count > 0;
+                
+                return (
+                  <div
+                    key={sz.num}
+                    style={{ gridRow: sz.row, gridColumn: sz.col, ...style }}
+                    className={`flex flex-col items-center justify-center rounded border text-xs font-black transition-all ${
+                      hasData 
+                        ? 'border-red-500/50 text-white shadow-lg' 
+                        : 'border-slate-800 bg-slate-900/60 text-slate-600'
+                    }`}
+                    title={`${sz.num}번 코스 (${sz.label}): ${count}회 투구`}
+                  >
+                    <span>{sz.num}</span>
+                    {hasData && (
+                      <span className="text-[9px] font-normal text-red-200 mt-0.5">{count}회</span>
+                    )}
+                  </div>
+                );
+              })}
+
+              {/* 외곽 볼 영역 */}
+              {[
+                { num: 10, style: { gridRow: '1', gridColumn: '2 / 5' }, label: '높은 볼' },
+                { num: 11, style: { gridRow: '2 / 5', gridColumn: '5' }, label: '우측 볼' },
+                { num: 12, style: { gridRow: '5', gridColumn: '2 / 5' }, label: '낮은 볼' },
+                { num: 13, style: { gridRow: '2 / 5', gridColumn: '1' }, label: '좌측 볼' }
+              ].map((bz) => {
+                const count = zoneCounts[bz.num] || 0;
+                const style = getZoneInlineStyle(bz.num);
+                const hasData = count > 0;
+
+                return (
+                  <div
+                    key={bz.num}
+                    style={{ ...bz.style, ...style }}
+                    className={`flex flex-col items-center justify-center rounded border text-[9px] font-extrabold transition-all ${
+                      hasData 
+                        ? 'border-amber-500/50 text-white shadow-lg' 
+                        : 'border-slate-900 bg-slate-950/40 text-slate-700'
+                    }`}
+                    title={`${bz.num}번 코스 (${bz.label}): ${count}회 투구`}
+                  >
+                    <span>{bz.num}</span>
+                    {hasData && (
+                      <span className="text-[8px] font-normal text-amber-200 mt-0.5">{count}회</span>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* 우측: 핫코스 랭킹 및 주요 통계 */}
+            <div className="flex-1 w-full bg-slate-950/40 border border-white/5 rounded-2xl p-4 flex flex-col gap-3.5">
+              <div className="flex items-center justify-between border-b border-white/5 pb-2">
+                <span className="text-xs font-bold text-slate-300">🔥 피칭 핫코스 순위 (Pitching Hot Zones)</span>
+                <span className="text-[10px] text-slate-500 font-medium">총 {totalZonePitches}회 분석 완료</span>
+              </div>
+
+              {hotZones.length > 0 ? (
+                <div className="flex flex-col gap-2">
+                  {hotZones.map((hz, idx) => {
+                    const pct = totalZonePitches > 0 ? ((hz.count / totalZonePitches) * 100).toFixed(1) : '0';
+                    const isStrikeZone = hz.zone <= 9;
+                    const zoneLabel = isStrikeZone 
+                      ? `${hz.zone}번 스트라이크 존 (${hz.label})` 
+                      : `${hz.zone}번 볼 구역 (${hz.label})`;
+                    
+                    return (
+                      <div key={hz.zone} className="flex items-center justify-between bg-slate-900/40 border border-white/5 rounded-xl px-3.5 py-2.5 hover:border-emerald-500/20 transition-all">
+                        <div className="flex items-center gap-3">
+                          <span className={`w-6 h-6 rounded-full flex items-center justify-center font-bold text-xs ${
+                            idx === 0 
+                              ? 'bg-red-500/20 text-red-400 border border-red-500/30' 
+                              : idx === 1 
+                                ? 'bg-orange-500/20 text-orange-400 border border-orange-500/30' 
+                                : 'bg-slate-800 text-slate-400'
+                          }`}>
+                            {idx + 1}
+                          </span>
+                          <div>
+                            <div className="text-xs font-extrabold text-slate-200">{zoneLabel}</div>
+                            <div className="text-[10px] text-slate-500 font-medium mt-0.5">
+                              주요 구종: <span className="text-slate-300 font-bold">{hz.mainType}</span> ({hz.mainCount}회)
+                            </div>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <div className="text-xs font-black text-emerald-400 font-mono">{hz.count}회</div>
+                          <div className="text-[10px] text-slate-500 font-bold font-mono mt-0.5">{pct}%</div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="text-center py-8 text-xs text-slate-500 font-medium">
+                  분석 정보가 부족합니다.
+                </div>
+              )}
+            </div>
+          </div>
+        ) : (
+          <div className="text-center py-10 text-xs text-slate-500 font-semibold bg-slate-950/20 rounded-xl border border-white/5">
+            투구 코스 기록이 존재하지 않습니다. 좌측 입력기에서 스트라이크 존을 클릭해 보세요!
+          </div>
+        )}
       </div>
 
       {/* 5. 실시간 타자 세션 기록 카드 */}

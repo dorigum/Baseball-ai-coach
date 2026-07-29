@@ -39,4 +39,6 @@ public class PitchRecord {
     private Double hitLocationX; // 타구 낙하지점 X 좌표
 
     private Double hitLocationY; // 타구 낙하지점 Y 좌표
+
+    private Integer pitchZone; // 투구 코스 존 (1~9: 스트라이크존, 10~13: 외곽볼존)
 }

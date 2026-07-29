@@ -1,4 +1,5 @@
 import React from 'react';
+import StrikeZone from './StrikeZone';
 
 const PlayInputPanel = ({
   gameInfo,
@@ -87,6 +88,10 @@ const PlayInputPanel = ({
     }
     if (!pitchInfo.pitchType) {
       showModal('⚠️ 입력 누락', '구종을 선택해주세요!', 'warning');
+      return;
+    }
+    if (pitchInfo.pitchZone === undefined || pitchInfo.pitchZone === null) {
+      showModal('⚠️ 입력 누락', '투구 코스(스트라이크 존)를 선택해주세요!', 'warning');
       return;
     }
     if (!pitchInfo.pitchResult) {
@@ -487,9 +492,14 @@ const PlayInputPanel = ({
             step="1"
             className="w-full h-1.5 bg-slate-950 rounded-lg appearance-none cursor-pointer accent-emerald-500"
             value={pitchInfo.pitchSpeed}
-            onChange={(e) => handleInputChange('pitchSpeed', parseInt(e.target.value))}
           />
         </div>
+        
+        {/* [NEW] 스트라이크 존 13분할 투구 코스 선택 그리드 */}
+        <StrikeZone
+          selectedZone={pitchInfo.pitchZone}
+          onZoneSelect={(zone) => handleInputChange('pitchZone', zone)}
+        />
       </div>
 
       {/* 투구 결과 */}

@@ -33,4 +33,5 @@ public class PitchRecordRequestDto {
     // 타구 좌표
     private Double hitLocationX;
     private Double hitLocationY;
+    private Integer pitchZone;
 }

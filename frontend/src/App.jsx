@@ -549,7 +549,8 @@ function App() {
     pitchType: 'Fastball',
     pitchSpeed: 142,
     pitchResult: 'Strike',
-    playResult: ''
+    playResult: '',
+    pitchZone: null
   }));
 
   // 수비진 라인업 상태 (현재 수비 팀의 기본 라인업으로 연동)
@@ -943,7 +944,8 @@ function App() {
           pitchSpeed: log.pitchSpeed,
           pitchResult: log.pitchResult,
           playResult: log.playResult,
-          hitLocation: log.hitLocationX !== null && log.hitLocationY !== null ? { x: log.hitLocationX, y: log.hitLocationY } : null
+          hitLocation: log.hitLocationX !== null && log.hitLocationY !== null ? { x: log.hitLocationX, y: log.hitLocationY } : null,
+          pitchZone: log.pitchZone
         }));
         
         setPitchLogs(mappedLogs);
@@ -1007,7 +1009,8 @@ function App() {
             hitLocationY: logItem.hitLocation ? logItem.hitLocation.y : null,
             inning: logItem.gameInfo.inning,
             inningHalf: logItem.gameInfo.inningHalf,
-            outs: logItem.outs !== undefined ? logItem.outs : 0
+            outs: logItem.outs !== undefined ? logItem.outs : 0,
+            pitchZone: logItem.pitchZone
           }),
           signal: controller.signal
         });
@@ -1269,13 +1272,15 @@ function App() {
       pitchResult: pitchInfo.pitchResult,
       playResult: finalPlayResult,
       hitLocation: pitchInfo.pitchResult === 'InPlay' ? hitLocation : null,
-      outs: recordedOuts
+      outs: recordedOuts,
+      pitchZone: pitchInfo.pitchZone
     };
 
     setPitchLogs((prev) => [...prev, newLog]);
     setCount(nextCount);
     setRunners(nextRunners);
     setHitLocation(null);
+    setPitchInfo((prev) => ({ ...prev, pitchZone: null }));
 
     // [NEW] 로그인 상태(idToken 존재 시) 백엔드로 투구 이력 저장 API 호출 동기화
     if (idToken) {
@@ -1308,7 +1313,8 @@ function App() {
           hitLocationY: hitLocation ? hitLocation.y : null,
           inning: gameInfo.inning,
           inningHalf: gameInfo.inningHalf,
-          outs: recordedOuts
+          outs: recordedOuts,
+          pitchZone: pitchInfo.pitchZone
         }),
         signal: controller.signal
       }).then(res => {

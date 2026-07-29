@@ -110,6 +110,7 @@ public class CoachService {
                 .pitchResult(dto.getPitchResult())
                 .hitLocationX(dto.getHitLocationX())
                 .hitLocationY(dto.getHitLocationY())
+                .pitchZone(dto.getPitchZone())
                 .build();
         pitchRecordRepository.save(record);
 
@@ -173,6 +174,7 @@ public class CoachService {
                             .playResult(pa.getFinalResult())
                             .hitLocationX(r.getHitLocationX())
                             .hitLocationY(r.getHitLocationY())
+                            .pitchZone(r.getPitchZone())
                             .build();
                 })
                 .collect(Collectors.toList());
