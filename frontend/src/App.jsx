@@ -1484,7 +1484,7 @@ function App() {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start w-full">
-          <div className="lg:col-span-5 flex flex-col gap-6 items-center w-full">
+          <div className="lg:col-span-6 flex flex-col gap-6 items-center w-full">
             {/* 상단 분리형 가이드 및 전광판 정보 카드 */}
             <div className="w-full bg-slate-900/80 border border-white/10 p-5 rounded-2xl flex justify-between items-center text-xs backdrop-blur-md shadow-xl">
               <div className="text-slate-300 leading-relaxed font-semibold">
@@ -1506,7 +1506,7 @@ function App() {
               </div>
             </div>
 
-            <div className="w-full aspect-square shrink-0 bg-slate-900/80 border border-white/10 p-6 rounded-2xl backdrop-blur-md shadow-2xl flex flex-col items-center justify-center overflow-hidden">
+            <div className="w-full aspect-square shrink-0 bg-slate-900/80 border border-white/10 p-2 rounded-2xl backdrop-blur-md shadow-2xl flex flex-col items-center justify-center overflow-hidden">
               <BaseballField
                 positions={positions}
                 onPositionChange={handlePositionChange}
@@ -1535,7 +1535,7 @@ function App() {
             />
           </div>
 
-          <div className="lg:col-span-7 w-full">
+          <div className="lg:col-span-6 w-full">
             <Dashboard 
               pitchLogs={pitchLogs} 
               aiAdvice={aiAdvice} 
