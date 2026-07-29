@@ -17,17 +17,26 @@ import java.nio.file.Paths;
 @Configuration
 public class FirebaseConfig {
 
+    private static final String MOCK_MODE_ENV = "FIREBASE_MOCK_MODE";
     private static boolean mockMode = false;
 
     @PostConstruct
     public void initFirebase() {
-        String configPath = System.getenv("FIREBASE_CONFIG_PATH");
-        
-        if (configPath == null || configPath.trim().isEmpty() || !Files.exists(Paths.get(configPath))) {
-            log.warn("⚠️ [Firebase] FIREBASE_CONFIG_PATH 환경 변수가 설정되지 않았거나 설정 파일이 존재하지 않습니다.");
-            log.warn("🚨 [Firebase] 시스템이 'Mock 인증 모드'로 가동됩니다. 프론트엔드와 백엔드 간 가상 토큰을 사용해 로컬 테스트를 진행할 수 있습니다.");
+        // [3] Mock 모드는 명시적인 환경 변수(FIREBASE_MOCK_MODE=true)가 있을 때만 활성화
+        if (Boolean.parseBoolean(System.getenv(MOCK_MODE_ENV))) {
             mockMode = true;
+            log.warn("[Firebase] 명시적으로 Mock 인증 모드를 활성화했습니다. (FIREBASE_MOCK_MODE=true)");
             return;
+        }
+
+        String configPath = System.getenv("FIREBASE_CONFIG_PATH");
+
+        if (configPath == null || configPath.trim().isEmpty() || !Files.exists(Paths.get(configPath))) {
+            // 설정 파일이 없으면 Mock으로 무음 전환하지 않고 즉시 애플리케이션 시작을 중단
+            throw new IllegalStateException(
+                "[Firebase] FIREBASE_CONFIG_PATH가 설정되지 않았거나 파일이 존재하지 않습니다. " +
+                "로컬 테스트 시에는 FIREBASE_MOCK_MODE=true 환경 변수를 명시적으로 설정하세요."
+            );
         }
 
         try (InputStream serviceAccount = new FileInputStream(configPath)) {
@@ -37,11 +46,11 @@ public class FirebaseConfig {
 
             if (FirebaseApp.getApps().isEmpty()) {
                 FirebaseApp.initializeApp(options);
-                log.info("✅ [Firebase] Firebase Admin SDK 초기화 성공 (Config: {})", configPath);
+                log.info("[Firebase] Firebase Admin SDK 초기화 성공.");
             }
         } catch (IOException e) {
-            log.error("❌ [Firebase] Firebase Admin SDK 초기화 중 에러 발생, Mock 모드로 전환합니다.", e);
-            mockMode = true;
+            // SDK 초기화 실패 시에도 Mock으로 자동 전환하지 않고 시작 중단
+            throw new IllegalStateException("[Firebase] Firebase Admin SDK 초기화에 실패했습니다.", e);
         }
     }
 

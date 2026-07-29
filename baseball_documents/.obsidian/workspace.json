@@ -203,12 +203,12 @@
       "command-palette:Open command palette": false,
       "bases:Create new base": false,
       "agent-client:Open agent client": false,
-      "realclaudian:Open Claudian": false,
-      "periodic-notes:Open today": false
+      "realclaudian:Open Claudian": false
     }
   },
   "active": "d3c76af91bb870c5",
   "lastOpenFiles": [
+    "project-log/2026-07-26.md",
     "project-log/2026-07-25.md",
     "TROUBLESHOOTING.md",
     "PROJECT_LOG.md",
