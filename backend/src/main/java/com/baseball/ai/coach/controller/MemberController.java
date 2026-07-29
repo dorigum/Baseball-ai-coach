@@ -39,7 +39,7 @@ public class MemberController {
         currentMember.updateMyTeam(request.getMyTeam());
         Member savedMember = memberRepository.save(currentMember);
         
-        log.info("🎯 [Member] 회원 선호 구단 업데이트 완료: UID={}, Team={}", savedMember.getUid(), savedMember.getMyTeam());
+        log.info("🎯 [Member] 회원 선호 구단 업데이트 완료: Team={}", savedMember.getMyTeam());
         return ResponseEntity.ok(MemberDto.from(savedMember));
     }
 }

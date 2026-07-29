@@ -29,37 +29,23 @@ public class CoachService {
     public void savePitchRecord(PitchRecordRequestDto dto) {
         // 1. Game 조회 또는 생성 (MemberContext에서 회원을 확인하여 연동)
         Member currentMember = MemberContext.getMember();
-        Game game;
-        if (currentMember != null) {
-            game = gameRepository.findByGameDateAndMemberUid(dto.getGameDate(), currentMember.getUid()).stream()
-                    .filter(g -> g.getStadium().equals(dto.getStadium())
-                            && g.getMyTeam().equals(dto.getMyTeam())
-                            && g.getOpponentTeam().equals(dto.getOpponentTeam()))
-                    .findFirst()
-                    .orElseGet(() -> gameRepository.save(Game.builder()
-                            .gameDate(dto.getGameDate())
-                            .stadium(dto.getStadium())
-                            .myTeam(dto.getMyTeam())
-                            .opponentTeam(dto.getOpponentTeam())
-                            .ourScore(0)
-                            .opponentScore(0)
-                            .member(currentMember)
-                            .build()));
-        } else {
-            game = gameRepository.findByGameDateAndMemberIsNull(dto.getGameDate()).stream()
-                    .filter(g -> g.getStadium().equals(dto.getStadium())
-                            && g.getMyTeam().equals(dto.getMyTeam())
-                            && g.getOpponentTeam().equals(dto.getOpponentTeam()))
-                    .findFirst()
-                    .orElseGet(() -> gameRepository.save(Game.builder()
-                            .gameDate(dto.getGameDate())
-                            .stadium(dto.getStadium())
-                            .myTeam(dto.getMyTeam())
-                            .opponentTeam(dto.getOpponentTeam())
-                            .ourScore(0)
-                            .opponentScore(0)
-                            .build()));
+        if (currentMember == null) {
+            throw new IllegalArgumentException("인증된 사용자만 기록을 저장할 수 있습니다.");
         }
+        Game game = gameRepository.findByGameDateAndMemberUid(dto.getGameDate(), currentMember.getUid()).stream()
+                .filter(g -> g.getStadium().equals(dto.getStadium())
+                        && g.getMyTeam().equals(dto.getMyTeam())
+                        && g.getOpponentTeam().equals(dto.getOpponentTeam()))
+                .findFirst()
+                .orElseGet(() -> gameRepository.save(Game.builder()
+                        .gameDate(dto.getGameDate())
+                        .stadium(dto.getStadium())
+                        .myTeam(dto.getMyTeam())
+                        .opponentTeam(dto.getOpponentTeam())
+                        .ourScore(0)
+                        .opponentScore(0)
+                        .member(currentMember)
+                        .build()));
 
         // 2. Player (투수/타자) 조회 또는 생성
         Player pitcher = playerRepository.findByNameAndTeam(dto.getPitcherName(), dto.getPitcherTeam())
@@ -147,22 +133,15 @@ public class CoachService {
      */
     public DashboardResponseDto getDashboardData(Long gameId) {
         Member currentMember = MemberContext.getMember();
+        if (currentMember == null) {
+            throw new IllegalArgumentException("인증된 사용자만 대시보드를 조회할 수 있습니다.");
+        }
         List<PitchRecord> records;
         
-        if (currentMember != null) {
-            // 로그인 상태
-            if (gameId != null) {
-                records = pitchRecordRepository.findByPlateAppearanceGameIdAndPlateAppearanceGameMemberUid(gameId, currentMember.getUid());
-            } else {
-                records = pitchRecordRepository.findByPlateAppearanceGameMemberUid(currentMember.getUid());
-            }
+        if (gameId != null) {
+            records = pitchRecordRepository.findByPlateAppearanceGameIdAndPlateAppearanceGameMemberUid(gameId, currentMember.getUid());
         } else {
-            // 비로그인 상태 (체험 모드)
-            if (gameId != null) {
-                records = pitchRecordRepository.findByPlateAppearanceGameIdAndPlateAppearanceGameMemberIsNull(gameId);
-            } else {
-                records = pitchRecordRepository.findByPlateAppearanceGameMemberIsNull();
-            }
+            records = pitchRecordRepository.findByPlateAppearanceGameMemberUid(currentMember.getUid());
         }
 
         // 1. 최근 투구 로그 리스트 변환 (최근 15건)

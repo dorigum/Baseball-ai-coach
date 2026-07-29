@@ -339,32 +339,24 @@ const initialLogs = [
   }
 ];
 
+const getStorageItem = (key, defaultValue) => {
+  try {
+    const saved = localStorage.getItem(key);
+    return saved ? JSON.parse(saved) : defaultValue;
+  } catch (error) {
+    console.error(`Failed to parse localStorage key "${key}":`, error);
+    return defaultValue;
+  }
+};
+
 function App() {
   const [showTopButton, setShowTopButton] = useState(false);
-  const [positions, setPositions] = useState(() => {
-    const saved = localStorage.getItem('baseball_positions');
-    return saved ? JSON.parse(saved) : initialPositions;
-  });
-  const [runners, setRunners] = useState(() => {
-    const saved = localStorage.getItem('baseball_runners');
-    return saved ? JSON.parse(saved) : { first: '신민재', second: '', third: '' };
-  });
-  const [count, setCount] = useState(() => {
-    const saved = localStorage.getItem('baseball_count');
-    return saved ? JSON.parse(saved) : { balls: 1, strikes: 1, outs: 1 };
-  });
-  const [pitchLogs, setPitchLogs] = useState(() => {
-    const saved = localStorage.getItem('baseball_pitchLogs');
-    return saved ? JSON.parse(saved) : initialLogs;
-  });
-  const [scores, setScores] = useState(() => {
-    const saved = localStorage.getItem('baseball_scores');
-    return saved ? JSON.parse(saved) : { myTeam: 0, opponentTeam: 0 };
-  });
-  const [hitLocation, setHitLocation] = useState(() => {
-    const saved = localStorage.getItem('baseball_hitLocation');
-    return saved ? JSON.parse(saved) : null;
-  });
+  const [positions, setPositions] = useState(() => getStorageItem('baseball_positions', initialPositions));
+  const [runners, setRunners] = useState(() => getStorageItem('baseball_runners', { first: '신민재', second: '', third: '' }));
+  const [count, setCount] = useState(() => getStorageItem('baseball_count', { balls: 1, strikes: 1, outs: 1 }));
+  const [pitchLogs, setPitchLogs] = useState(() => getStorageItem('baseball_pitchLogs', initialLogs));
+  const [scores, setScores] = useState(() => getStorageItem('baseball_scores', { myTeam: 0, opponentTeam: 0 }));
+  const [hitLocation, setHitLocation] = useState(() => getStorageItem('baseball_hitLocation', null));
   const [aiAdvice, setAiAdvice] = useState('');
   const abortControllerRef = useRef(null);
   const [modal, setModal] = useState({
@@ -395,10 +387,7 @@ function App() {
   };
 
   // [NEW] 회원 인증 관련 상태 선언 및 Lazy Loading 지원
-  const [user, setUser] = useState(() => {
-    const saved = localStorage.getItem('baseball_user');
-    return saved ? JSON.parse(saved) : null;
-  });
+  const [user, setUser] = useState(() => getStorageItem('baseball_user', null));
   const [idToken, setIdToken] = useState(() => {
     return localStorage.getItem('baseball_idToken') || '';
   });
@@ -471,17 +460,14 @@ function App() {
   };
 
   // 경기 설정 상태
-  const [gameInfo, setGameInfo] = useState(() => {
-    const saved = localStorage.getItem('baseball_gameInfo');
-    return saved ? JSON.parse(saved) : {
-      date: new Date().toISOString().split('T')[0],
-      stadium: '잠실 (LG/두산)',
-      myTeam: 'LG',
-      opponentTeam: 'KIA',
-      inning: 3,
-      inningHalf: '말'
-    };
-  });
+  const [gameInfo, setGameInfo] = useState(() => getStorageItem('baseball_gameInfo', {
+    date: new Date().toISOString().split('T')[0],
+    stadium: '잠실 (LG/두산)',
+    myTeam: 'LG',
+    opponentTeam: 'KIA',
+    inning: 3,
+    inningHalf: '말'
+  }));
 
   // 현재 수비 팀/공격 팀 계산
   const isTop = gameInfo.inningHalf === '초';
@@ -489,31 +475,22 @@ function App() {
   const attackingTeam = isTop ? gameInfo.opponentTeam : gameInfo.myTeam;
 
   // 투수/타자 입력 폼 정보
-  const [pitchInfo, setPitchInfo] = useState(() => {
-    const saved = localStorage.getItem('baseball_pitchInfo');
-    return saved ? JSON.parse(saved) : {
-      pitcherName: '양현종',
-      pitcherTeam: 'KIA',
-      batterName: '김현수',
-      batterTeam: 'LG',
-      pitchType: 'Fastball',
-      pitchSpeed: 142,
-      pitchResult: 'Strike',
-      playResult: ''
-    };
-  });
+  const [pitchInfo, setPitchInfo] = useState(() => getStorageItem('baseball_pitchInfo', {
+    pitcherName: '양현종',
+    pitcherTeam: 'KIA',
+    batterName: '김현수',
+    batterTeam: 'LG',
+    pitchType: 'Fastball',
+    pitchSpeed: 142,
+    pitchResult: 'Strike',
+    playResult: ''
+  }));
 
   // 수비진 라인업 상태 (현재 수비 팀의 기본 라인업으로 연동)
-  const [defenders, setDefenders] = useState(() => {
-    const saved = localStorage.getItem('baseball_defenders');
-    return saved ? JSON.parse(saved) : teamLineups.KIA;
-  });
+  const [defenders, setDefenders] = useState(() => getStorageItem('baseball_defenders', teamLineups.KIA));
 
   // [NEW] 공격 타순 라인업 상태 (현재 공격 팀의 기본 타순으로 연동)
-  const [battingOrder, setBattingOrder] = useState(() => {
-    const saved = localStorage.getItem('baseball_battingOrder');
-    return saved ? JSON.parse(saved) : teamBattingOrders.LG;
-  });
+  const [battingOrder, setBattingOrder] = useState(() => getStorageItem('baseball_battingOrder', teamBattingOrders.LG));
 
   const isFirstRender = useRef(true);
 
@@ -837,25 +814,36 @@ function App() {
     if (!token) return;
     try {
       const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080';
+      
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 8000);
+
       const response = await fetch(`${apiBaseUrl}/api/coach/dashboard`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'X-Mock-UID': currentUser?.uid || ''
-        }
+        },
+        signal: controller.signal
       });
+      clearTimeout(timeoutId);
+
       if (response.ok) {
         const data = await response.json();
+        
+        if (!data || !Array.isArray(data.pitchLogs)) {
+          return;
+        }
         
         // 백엔드로부터 가져온 15개의 투구 기록을 기존 pitchLogs에 매핑 동기화
         const mappedLogs = data.pitchLogs.map(log => ({
           id: `log-${log.id}`,
           gameInfo: {
-            date: log.gameInfo.date,
-            stadium: log.gameInfo.stadium,
-            myTeam: log.gameInfo.myTeam,
-            opponentTeam: log.gameInfo.opponentTeam,
-            inning: log.gameInfo.inning,
-            inningHalf: log.gameInfo.inningHalf
+            date: log.gameInfo?.date || '',
+            stadium: log.gameInfo?.stadium || '',
+            myTeam: log.gameInfo?.myTeam || '',
+            opponentTeam: log.gameInfo?.opponentTeam || '',
+            inning: log.gameInfo?.inning || 1,
+            inningHalf: log.gameInfo?.inningHalf || '초'
           },
           pitcherName: log.pitcherName,
           pitcherTeam: log.pitcherTeam,
@@ -872,21 +860,80 @@ function App() {
         
         // 스코어보드 득점 자동 패치 (최근 로그 기준 점수 동기화)
         if (mappedLogs.length > 0) {
-          const latestGame = data.pitchLogs[0].gameInfo;
           // 백엔드는 Game 정보를 직접 관리하므로 Game의 스코어가 있으면 연계
           // H2 DB 상에 저장된 Game 스코어가 있다면 동기화 수행
         }
       }
     } catch (err) {
-      console.error("백엔드 대시보드 데이터 동기화 에러:", err);
+      if (err.name === 'AbortError') {
+        console.error("백엔드 대시보드 데이터 동기화 타임아웃 발생 (8s)");
+      } else {
+        console.error("백엔드 대시보드 데이터 동기화 에러:", err);
+      }
     }
   };
 
-  // [NEW] 로그인 성공 후 최초 1회 & 갱신 시 대시보드 데이터 패치 훅
+  // [NEW] 비회원 기간 동안 저장된 로컬 로그를 로그인 시 백엔드 서버에 마이그레이션(동기화)하는 함수
+  const migrateLocalLogsToServer = async (token, currentUser) => {
+    const localLogs = getStorageItem('baseball_pitchLogs', []);
+    if (!localLogs || localLogs.length === 0) return;
+
+    // 타임스탬프 형태로 임시 생성된 비회원 기록만 필터링 (id 예: log-1718294819284)
+    const unsyncedLogs = localLogs.filter(log => /^log-\d{10,}$/.test(log.id));
+    if (unsyncedLogs.length === 0) return;
+
+    const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080';
+    
+    // 순차적으로 백엔드 서버에 저장 API 호출
+    for (const logItem of unsyncedLogs) {
+      try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 8000);
+
+        await fetch(`${apiBaseUrl}/api/coach/pitch`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+            'X-Mock-UID': currentUser?.uid || ''
+          },
+          body: JSON.stringify({
+            gameDate: logItem.gameInfo.date,
+            stadium: logItem.gameInfo.stadium,
+            myTeam: logItem.gameInfo.myTeam,
+            opponentTeam: logItem.gameInfo.opponentTeam,
+            pitcherName: logItem.pitcherName,
+            pitcherTeam: logItem.pitcherTeam,
+            batterName: logItem.batterName,
+            batterTeam: logItem.batterTeam,
+            pitchType: logItem.pitchType,
+            pitchSpeed: logItem.pitchSpeed,
+            pitchResult: logItem.pitchResult,
+            playResult: logItem.playResult,
+            hitLocationX: logItem.hitLocation ? logItem.hitLocation.x : null,
+            hitLocationY: logItem.hitLocation ? logItem.hitLocation.y : null,
+            inning: logItem.gameInfo.inning,
+            inningHalf: logItem.gameInfo.inningHalf,
+            outs: 0
+          }),
+          signal: controller.signal
+        });
+        clearTimeout(timeoutId);
+      } catch (err) {
+        console.error("로컬 로그 마이그레이션 실패:", err);
+      }
+    }
+  };
+
+  // [NEW] 로그인 성공 후 최초 1회 & 갱신 시 대시보드 데이터 패치 및 로컬 데이터 마이그레이션 훅
   useEffect(() => {
     if (idToken) {
-      fetchBackendDashboard(idToken, user);
-      fetchMyProfile(idToken, user);
+      const syncAndFetch = async () => {
+        await migrateLocalLogsToServer(idToken, user);
+        await fetchBackendDashboard(idToken, user);
+        await fetchMyProfile(idToken, user);
+      };
+      syncAndFetch();
     }
   }, [idToken]);
 
@@ -1132,6 +1179,10 @@ function App() {
     // [NEW] 로그인 상태(idToken 존재 시) 백엔드로 투구 이력 저장 API 호출 동기화
     if (idToken) {
       const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080';
+      
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 8000);
+
       fetch(`${apiBaseUrl}/api/coach/pitch`, {
         method: 'POST',
         headers: {
@@ -1156,15 +1207,21 @@ function App() {
           hitLocationY: hitLocation ? hitLocation.y : null,
           inning: gameInfo.inning,
           inningHalf: gameInfo.inningHalf,
-          outs: count.outs
-        })
+          outs: nextCount.outs
+        }),
+        signal: controller.signal
       }).then(res => {
+        clearTimeout(timeoutId);
         if (res.ok) {
           // 백엔드 저장이 정상 처리되면 데이터베이스 기준으로 리포트 동기화
           fetchBackendDashboard();
+        } else {
+          showModal('💾 서버 저장 실패', '서버 데이터베이스에 기록을 보존하지 못했습니다. 기록은 로컬 브라우저에 임시 보관됩니다.', 'warning');
         }
       }).catch(err => {
+        clearTimeout(timeoutId);
         console.error("백엔드 투구 저장 API 호출 에러:", err);
+        showModal('🔌 네트워크 오류', '서버와의 통신이 원활하지 않아 기록이 로컬 스토리지에만 저장됩니다.', 'warning');
       });
     }
   };

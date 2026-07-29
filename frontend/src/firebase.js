@@ -16,19 +16,31 @@ let auth;
 let googleProvider;
 let isMockAuth = false;
 
-// 필수 키가 누락되었을 경우 Mock 인증 모드로 가동
+// 필수 키가 누락되었을 경우 Mock 인증 모드로 가동 (단, 개발 빌드 환경인 경우에만 허용)
+const isDev = import.meta.env.DEV;
+
 if (!firebaseConfig.apiKey || firebaseConfig.apiKey.trim() === "" || firebaseConfig.apiKey === "YOUR_API_KEY") {
-  console.warn("⚠️ [Firebase] Firebase API Key가 유효하지 않거나 설정되지 않았습니다.");
-  console.warn("🚨 [Firebase] 프론트엔드가 'Mock 인증 모드'로 작동합니다. 소셜 로그인 버튼 클릭 시 가상 로그인이 수행됩니다.");
-  isMockAuth = true;
+  if (isDev) {
+    console.warn("⚠️ [Firebase] Firebase API Key가 유효하지 않거나 설정되지 않았습니다.");
+    console.warn("🚨 [Firebase] 프론트엔드가 'Mock 인증 모드'로 작동합니다. 소셜 로그인 버튼 클릭 시 가상 로그인이 수행됩니다.");
+    isMockAuth = true;
+  } else {
+    console.error("❌ [Firebase] 프로덕션 환경에서 Firebase 설정 키가 올바르지 않습니다. 로그인이 비활성화됩니다.");
+    isMockAuth = false;
+  }
 } else {
   try {
     app = initializeApp(firebaseConfig);
     auth = getAuth(app);
     googleProvider = new GoogleAuthProvider();
   } catch (error) {
-    console.error("❌ [Firebase] 초기화 중 예외 발생, Mock 모드로 전환합니다.", error);
-    isMockAuth = true;
+    if (isDev) {
+      console.error("❌ [Firebase] 초기화 중 예외 발생, Mock 모드로 전환합니다.", error);
+      isMockAuth = true;
+    } else {
+      console.error("❌ [Firebase] 초기화 중 예외 발생. 프로덕션 환경이므로 로그인이 비활성화됩니다.", error);
+      isMockAuth = false;
+    }
   }
 }
 
