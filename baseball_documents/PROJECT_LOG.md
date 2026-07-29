@@ -5,6 +5,7 @@ Baseball AI Coach 프로젝트의 개발 여정과 기술 스택 마이그레이
 ## 📌 핵심 문서
 
 - [프론트엔드/백엔드 구축 완료 보고서](guides/Guide.md)
+- [추후 개발 예정 기능 백로그](BACKLOG.md)
 - [문서 작성 가이드](guides/Document_Guide.md)
 - [트러블슈팅 색인](TROUBLESHOOTING.md)
 
