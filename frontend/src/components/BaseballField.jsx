@@ -7,7 +7,8 @@ const BaseballField = ({
   onRunnerToggle, 
   hitLocation, 
   onHitLocationSelect,
-  defenders = {}
+  defenders = {},
+  recommendedShift = 'STANDARD'
 }) => {
   const svgRef = useRef(null);
   const [hoveredPlayer, setHoveredPlayer] = useState(null);
@@ -479,6 +480,120 @@ const BaseballField = ({
             <line x1={hitLocation.x} y1={hitLocation.y - 3} x2={hitLocation.x} y2={hitLocation.y + 3} stroke="#dc2626" strokeWidth="1" />
           </g>
         )}
+
+        {/* [NEW] AI 권장 수비 시프트 점선 가이드 및 지시선 오버레이 */}
+        {recommendedShift !== 'STANDARD' && (() => {
+          const shiftCoordinates = {
+            STANDARD: {
+              P: { x: 250, y: 340 },
+              C: { x: 250, y: 460 },
+              '1B': { x: 360, y: 320 },
+              '2B': { x: 300, y: 220 },
+              '3B': { x: 140, y: 320 },
+              SS: { x: 200, y: 220 },
+              LF: { x: 120, y: 140 },
+              CF: { x: 250, y: 90 },
+              RF: { x: 380, y: 140 }
+            },
+            PULL_LEFT: {
+              P: { x: 250, y: 340 },
+              C: { x: 250, y: 460 },
+              '1B': { x: 370, y: 340 },
+              '2B': { x: 330, y: 240 },
+              SS: { x: 230, y: 220 },
+              '3B': { x: 170, y: 330 },
+              LF: { x: 140, y: 150 },
+              CF: { x: 270, y: 100 },
+              RF: { x: 400, y: 150 }
+            },
+            PULL_RIGHT: {
+              P: { x: 250, y: 340 },
+              C: { x: 250, y: 460 },
+              '1B': { x: 340, y: 330 },
+              '2B': { x: 270, y: 220 },
+              SS: { x: 170, y: 240 },
+              '3B': { x: 130, y: 340 },
+              LF: { x: 100, y: 150 },
+              CF: { x: 230, y: 100 },
+              RF: { x: 360, y: 150 }
+            },
+            BUNT: {
+              P: { x: 250, y: 340 },
+              C: { x: 250, y: 460 },
+              '1B': { x: 340, y: 380 },
+              '2B': { x: 300, y: 220 },
+              '3B': { x: 160, y: 380 },
+              SS: { x: 200, y: 220 },
+              LF: { x: 120, y: 140 },
+              CF: { x: 250, y: 90 },
+              RF: { x: 380, y: 140 }
+            },
+            DEEP: {
+              P: { x: 250, y: 340 },
+              C: { x: 250, y: 460 },
+              '1B': { x: 360, y: 320 },
+              '2B': { x: 300, y: 220 },
+              '3B': { x: 140, y: 320 },
+              SS: { x: 200, y: 220 },
+              LF: { x: 110, y: 100 },
+              CF: { x: 250, y: 55 },
+              RF: { x: 390, y: 100 }
+            }
+          };
+
+          const guides = shiftCoordinates[recommendedShift];
+          if (!guides) return null;
+          
+          return Object.entries(guides).map(([key, guide]) => {
+            const currentPos = positions[key];
+            if (!currentPos) return null;
+            
+            const dx = guide.x - currentPos.x;
+            const dy = guide.y - currentPos.y;
+            const distance = Math.sqrt(dx * dx + dy * dy);
+            const showLine = distance > 15;
+
+            return (
+              <g key={`guide-${key}`} className="select-none pointer-events-none">
+                {showLine && (
+                  <line 
+                    x1={currentPos.x} 
+                    y1={currentPos.y} 
+                    x2={guide.x} 
+                    y2={guide.y} 
+                    stroke="#10b981" 
+                    strokeWidth="1.5" 
+                    strokeDasharray="3,3" 
+                    opacity="0.3" 
+                  />
+                )}
+                <circle 
+                  cx={guide.x} 
+                  cy={guide.y} 
+                  r="12" 
+                  fill="none" 
+                  stroke="#10b981" 
+                  strokeWidth="1.5" 
+                  strokeDasharray="2,2" 
+                  opacity="0.5" 
+                  filter="url(#neonGlow)"
+                />
+                <text 
+                  x={guide.x} 
+                  y={guide.y + 3.5} 
+                  textAnchor="middle" 
+                  fontSize="8.5" 
+                  fontWeight="black" 
+                  fill="#10b981" 
+                  opacity="0.45"
+                  className="font-sans"
+                >
+                  {key}
+                </text>
+              </g>
+            );
+          });
+        })()}
 
         {/* 수비수 마커 */}
         {Object.entries(positions).map(([key, pos]) => (

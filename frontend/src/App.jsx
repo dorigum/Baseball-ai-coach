@@ -404,6 +404,7 @@ const teamLogos = {
 function App() {
   const [showTopButton, setShowTopButton] = useState(false);
   const [positions, setPositions] = useState(() => getStorageItem('baseball_positions', initialPositions));
+  const [recommendedShift, setRecommendedShift] = useState('STANDARD');
   const [runners, setRunners] = useState(() => getStorageItem('baseball_runners', { first: '신민재', second: '', third: '' }));
   const [count, setCount] = useState(() => getStorageItem('baseball_count', { balls: 1, strikes: 1, outs: 1 }));
   const [pitchLogs, setPitchLogs] = useState(() => getStorageItem('baseball_pitchLogs', initialLogs));
@@ -898,6 +899,19 @@ function App() {
       }
     }
     setAiAdvice(localAdvice);
+
+    // [NEW] 로컬 폴백 모드에서도 상황 분석 후 권장 시프트 정보 동기화
+    let localShift = 'STANDARD';
+    if (!isMyTeamOffense) {
+      if (runners.first && !runners.second && !runners.third && count.outs < 2) {
+        localShift = 'BUNT';
+      } else if (stadiumName.includes('인천') || stadiumName.includes('대구')) {
+        localShift = 'DEEP';
+      } else if (pitchInfo.batterName.includes('김도영') || pitchInfo.batterName.includes('김현수')) {
+        localShift = 'PULL_LEFT';
+      }
+    }
+    setRecommendedShift(localShift);
   };
 
   // [NEW] 백엔드 DB 연동 대시보드 통계 패치 함수
@@ -1126,7 +1140,21 @@ function App() {
 
       if (response.ok) {
         const data = await response.json();
-        setAiAdvice(data.advice);
+        const rawAdvice = data.advice || '';
+        
+        // 꼬리표 파싱: [RECOMMENDED_SHIFT: TYPE]
+        const match = rawAdvice.match(/\[RECOMMENDED_SHIFT:\s*(\w+)\]/);
+        let shiftType = 'STANDARD';
+        let cleanAdvice = rawAdvice;
+        
+        if (match) {
+          shiftType = match[1];
+          // 꼬리표 정보 제거 및 깔끔하게 조언 텍스트 정렬
+          cleanAdvice = rawAdvice.replace(/\[RECOMMENDED_SHIFT:\s*\w+\]/, '').trim();
+        }
+        
+        setAiAdvice(cleanAdvice);
+        setRecommendedShift(shiftType);
       } else {
         triggerLocalFallback();
       }
@@ -1134,6 +1162,80 @@ function App() {
       if (err.name !== 'AbortError') {
         triggerLocalFallback();
       }
+    }
+  };
+
+  // [NEW] AI가 추천하는 수비 배치 시프트를 야구장 핀에 100% 동기화 적용하는 함수
+  const handleApplyAiShift = () => {
+    if (recommendedShift === 'STANDARD') {
+      setPositions(initialPositions);
+      showModal('🤖 수비 시프트 적용', '기본 표준 수비 포지션으로 배치되었습니다.', 'info');
+      return;
+    }
+
+    const shiftCoordinates = {
+      STANDARD: initialPositions,
+      PULL_LEFT: {
+        P: { x: 250, y: 340 },
+        C: { x: 250, y: 460 },
+        '1B': { x: 370, y: 340 },
+        '2B': { x: 330, y: 240 },
+        SS: { x: 230, y: 220 },
+        '3B': { x: 170, y: 330 },
+        LF: { x: 140, y: 150 },
+        CF: { x: 270, y: 100 },
+        RF: { x: 400, y: 150 }
+      },
+      PULL_RIGHT: {
+        P: { x: 250, y: 340 },
+        C: { x: 250, y: 460 },
+        '1B': { x: 340, y: 330 },
+        '2B': { x: 270, y: 220 },
+        SS: { x: 170, y: 240 },
+        '3B': { x: 130, y: 340 },
+        LF: { x: 100, y: 150 },
+        CF: { x: 230, y: 100 },
+        RF: { x: 360, y: 150 }
+      },
+      BUNT: {
+        P: { x: 250, y: 340 },
+        C: { x: 250, y: 460 },
+        '1B': { x: 340, y: 380 },
+        '2B': { x: 300, y: 220 },
+        '3B': { x: 160, y: 380 },
+        SS: { x: 200, y: 220 },
+        LF: { x: 120, y: 140 },
+        CF: { x: 250, y: 90 },
+        RF: { x: 380, y: 140 }
+      },
+      DEEP: {
+        P: { x: 250, y: 340 },
+        C: { x: 250, y: 460 },
+        '1B': { x: 360, y: 320 },
+        '2B': { x: 300, y: 220 },
+        '3B': { x: 140, y: 320 },
+        SS: { x: 200, y: 220 },
+        LF: { x: 110, y: 100 },
+        CF: { x: 250, y: 55 },
+        RF: { x: 390, y: 100 }
+      }
+    };
+
+    const targetCoords = shiftCoordinates[recommendedShift];
+    if (targetCoords) {
+      setPositions(targetCoords);
+      localStorage.setItem('baseball_positions', JSON.stringify(targetCoords));
+      showModal('🤖 AI 추천 시프트 적용', `AI 권장 [${getShiftLabel(recommendedShift)}] 수비 배치가 실시간 야구장 맵에 적용되었습니다.`, 'info');
+    }
+  };
+
+  const getShiftLabel = (type) => {
+    switch (type) {
+      case 'PULL_LEFT': return '좌타자 시프트';
+      case 'PULL_RIGHT': return '우타자 시프트';
+      case 'BUNT': return '번트 수비 시프트';
+      case 'DEEP': return '외야 깊은 시프트';
+      default: return '표준 수비';
     }
   };
 
@@ -1405,6 +1507,15 @@ function App() {
           
           <div className="h-6 w-px bg-white/10" />
 
+          {recommendedShift !== 'STANDARD' && (
+            <button
+              onClick={handleApplyAiShift}
+              className="text-xs bg-emerald-950/50 border border-emerald-500/40 hover:bg-emerald-900/50 hover:border-emerald-500 text-emerald-400 font-bold py-2 px-3.5 rounded-lg transition-all animate-pulse"
+            >
+              🤖 AI 추천 [{getShiftLabel(recommendedShift)}] 적용
+            </button>
+          )}
+
           <button
             onClick={handleResetPositions}
             className="text-xs bg-slate-900 border border-white/10 hover:bg-slate-800 text-slate-300 font-bold py-2 px-3.5 rounded-lg transition-all"
@@ -1569,6 +1680,7 @@ function App() {
                 onHitLocationSelect={handleHitLocationSelect}
                 defenders={defenders}
                 gameInfo={gameInfo}
+                recommendedShift={recommendedShift}
               />
             </div>
             <PlayInputPanel
