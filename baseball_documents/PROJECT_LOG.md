@@ -10,6 +10,10 @@ Baseball AI Coach 프로젝트의 개발 여정과 기술 스택 마이그레이
 
 ## 📅 날짜별 개발 기록
 
+- [2026-07-29](project-log/2026-07-29.md):
+  - **폰트 및 스타일 단일화**: Noto Sans KR 폰트 전역 단일화, KBO 공식 구단 로고 핫링크 우회 연동(referrerPolicy), 야구장 이미지 카드 크기 최대화(6:6 Grid).
+  - **13분할 스트라이크 존 & 히트맵 (후보 1)**: 🎯 KBO 표준 13분할 스트라이크 존 그리드(StrikeZone) 입력 및 대시보드 실시간 투구 코스 히트맵 시각화 연동 완료.
+  - **AI 제안 수비 포지션 오버레이 (방안 A)**: 🤖 AI 수비 포지션 가이드 핀/점선 오버레이 시각화 및 원클릭 자동 시프트 적용 구현 완료.
 - [2026-07-26](project-log/2026-07-26.md):
   - **Firebase Hosting 분리 배포**: Baseball AI Coach 프론트엔드를 CodeTrip Firebase 프로젝트에서 분리하여 신규 프로젝트 `baseball-coach-ai`에 배포. 배포 URL `https://baseball-coach-ai.web.app` 정상 응답 확인 및 `frontend/.firebaserc` 기본 프로젝트 설정 갱신.
 - [2026-07-25](project-log/2026-07-25.md): 
