@@ -697,13 +697,13 @@ function App() {
 
   // [NEW] 우측 섹션 라인업 에디터에서 수비진의 포지션을 변경할 때 두 수비수를 스왑하고 투수 교체를 연동하는 핸들러
   const handleDefenderPositionSwap = (posA, posB, newNameForA) => {
-    const playerA = { ...defenders[posA], name: newNameForA };
-    const playerB = defenders[posB];
-    const newPitcher = posA === 'P' ? playerB : (posB === 'P' ? playerA : null);
+    if (posA === posB) return;
 
+    let newPitcher = null;
     setDefenders((prev) => {
       const pA = { ...prev[posA], name: newNameForA };
       const pB = prev[posB];
+      newPitcher = posA === 'P' ? pB : (posB === 'P' ? pA : null);
       return {
         ...prev,
         [posA]: pB,
@@ -921,14 +921,17 @@ function App() {
     if (unsyncedLogs.length === 0) return;
 
     const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080';
+    const migrated = new Set(getStorageItem('baseball_migratedLogIds', []));
     
     // 순차적으로 백엔드 서버에 저장 API 호출
     for (const logItem of unsyncedLogs) {
+      if (migrated.has(logItem.id)) continue;
+      
       try {
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 8000);
 
-        await fetch(`${apiBaseUrl}/api/coach/pitch`, {
+        const res = await fetch(`${apiBaseUrl}/api/coach/pitch`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -957,6 +960,11 @@ function App() {
           signal: controller.signal
         });
         clearTimeout(timeoutId);
+
+        if (res.ok) {
+          migrated.add(logItem.id);
+          localStorage.setItem('baseball_migratedLogIds', JSON.stringify([...migrated]));
+        }
       } catch (err) {
         console.error("로컬 로그 마이그레이션 실패:", err);
       }
@@ -1283,7 +1291,8 @@ function App() {
         'baseball_gameInfo',
         'baseball_pitchInfo',
         'baseball_defenders',
-        'baseball_battingOrder'
+        'baseball_battingOrder',
+        'baseball_migratedLogIds'
       ];
       keysToRemove.forEach(key => localStorage.removeItem(key));
       window.location.reload();
