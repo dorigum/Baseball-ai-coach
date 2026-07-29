@@ -38,6 +38,9 @@ dependencies {
     // [수정] 구 버전 대신 Spring AI Google GenAI(Gemini) 공식 스타터 라이브러리로 변경 (버전 직접 기입으로 꼬임 해결)
     implementation 'org.springframework.ai:spring-ai-starter-model-google-genai:1.1.0-M1'
     
+    // Firebase Admin SDK 의존성 주입 (소셜 로그인 토큰 검증용)
+    implementation 'com.google.firebase:firebase-admin:9.2.0'
+    
     compileOnly 'org.projectlombok:lombok'
     annotationProcessor 'org.projectlombok:lombok'
     

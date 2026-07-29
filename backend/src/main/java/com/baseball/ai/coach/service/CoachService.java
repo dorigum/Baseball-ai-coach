@@ -1,12 +1,15 @@
 package com.baseball.ai.coach.service;
 
+import com.baseball.ai.coach.config.MemberContext;
 import com.baseball.ai.coach.domain.*;
 import com.baseball.ai.coach.dto.DashboardResponseDto;
 import com.baseball.ai.coach.dto.PitchRecordRequestDto;
 import com.baseball.ai.coach.repository.*;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -26,8 +29,12 @@ public class CoachService {
      */
     @Transactional
     public void savePitchRecord(PitchRecordRequestDto dto) {
-        // 1. Game 조회 또는 생성
-        Game game = gameRepository.findByGameDate(dto.getGameDate()).stream()
+        // 1. Game 조회 또는 생성 (MemberContext에서 회원을 확인하여 연동)
+        Member currentMember = MemberContext.getMember();
+        if (currentMember == null) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "인증된 사용자만 기록을 저장할 수 있습니다.");
+        }
+        Game game = gameRepository.findByGameDateAndMemberUid(dto.getGameDate(), currentMember.getUid()).stream()
                 .filter(g -> g.getStadium().equals(dto.getStadium())
                         && g.getMyTeam().equals(dto.getMyTeam())
                         && g.getOpponentTeam().equals(dto.getOpponentTeam()))
@@ -39,6 +46,7 @@ public class CoachService {
                         .opponentTeam(dto.getOpponentTeam())
                         .ourScore(0)
                         .opponentScore(0)
+                        .member(currentMember)
                         .build()));
 
         // 2. Player (투수/타자) 조회 또는 생성
@@ -126,12 +134,16 @@ public class CoachService {
      * 특정 경기(또는 전체 경기) 기반 대시보드 통계 및 최신 로그 리포트 집계
      */
     public DashboardResponseDto getDashboardData(Long gameId) {
+        Member currentMember = MemberContext.getMember();
+        if (currentMember == null) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "인증된 사용자만 대시보드를 조회할 수 있습니다.");
+        }
         List<PitchRecord> records;
+        
         if (gameId != null) {
-            records = pitchRecordRepository.findByPlateAppearanceGameId(gameId);
+            records = pitchRecordRepository.findByPlateAppearanceGameIdAndPlateAppearanceGameMemberUid(gameId, currentMember.getUid());
         } else {
-            // gameId가 없으면 전체 누적 데이터를 조회하여 포괄 대시보드 구성
-            records = pitchRecordRepository.findAll();
+            records = pitchRecordRepository.findByPlateAppearanceGameMemberUid(currentMember.getUid());
         }
 
         // 1. 최근 투구 로그 리스트 변환 (최근 15건)

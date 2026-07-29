@@ -7,4 +7,6 @@ import java.util.List;
 
 public interface GameRepository extends JpaRepository<Game, Long> {
     List<Game> findByGameDate(LocalDate gameDate);
+    List<Game> findByMemberUid(String uid);
+    List<Game> findByGameDateAndMemberUid(LocalDate gameDate, String uid);
 }

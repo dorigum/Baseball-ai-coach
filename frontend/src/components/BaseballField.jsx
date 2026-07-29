@@ -7,23 +7,44 @@ const BaseballField = ({
   onRunnerToggle, 
   hitLocation, 
   onHitLocationSelect,
-  defenders = {},
-  gameInfo // [NEW] 실시간 경기 설정 정보 수용
+  defenders = {}
 }) => {
   const svgRef = useRef(null);
   const [hoveredPlayer, setHoveredPlayer] = useState(null);
   const [tooltipPos, setTooltipPos] = useState({ x: 0, y: 0 });
 
-  // [NEW] 현재 이닝에 매칭되는 공격팀 및 수비팀 계산
-  const getOffenseDefenseTeams = () => {
-    if (!gameInfo) return { attackingTeam: '공격', defendingTeam: '수비' };
-    const isTop = gameInfo.inningHalf === '초';
-    const attackingTeam = isTop ? gameInfo.opponentTeam : gameInfo.myTeam;
-    const defendingTeam = isTop ? gameInfo.myTeam : gameInfo.opponentTeam;
-    return { attackingTeam, defendingTeam };
-  };
 
-  const { attackingTeam, defendingTeam } = getOffenseDefenseTeams();
+
+  const renderRunnerLabel = (name, x, y) => {
+    if (!name) return null;
+    const width = Math.max(50, name.length * 11 + 10);
+    const halfWidth = width / 2;
+    return (
+      <g transform={`translate(${x}, ${y})`} className="select-none pointer-events-none">
+        <rect 
+          x={-halfWidth} 
+          y="-9" 
+          width={width} 
+          height="18" 
+          rx="5" 
+          fill="rgba(15, 23, 42, 0.9)" 
+          stroke="#f97316" 
+          strokeWidth="1.2" 
+        />
+        <text 
+          x="0" 
+          y="3" 
+          textAnchor="middle" 
+          fontSize="9.5" 
+          fontWeight="900" 
+          fill="#ffffff"
+          className="font-sans"
+        >
+          {name}
+        </text>
+      </g>
+    );
+  };
 
   // 드래그 시작 (마우스)
   const handleMouseDown = (e, playerKey) => {
@@ -119,7 +140,7 @@ const BaseballField = ({
 
   // 필드 클릭 시 타구 위치 선택
   const handleFieldClick = (e) => {
-    if (e.target.tagName === 'circle' || e.target.tagName === 'text' || e.target.closest('.defender-badge')) {
+    if (e.target.closest('.defender-badge')) {
       return;
     }
     
@@ -131,33 +152,23 @@ const BaseballField = ({
     const viewboxX = (x / rect.width) * 500;
     const viewboxY = (y / rect.height) * 500;
     
+    // 이미 찍힌 마커 근처(20px 내)를 다시 클릭하면 마커 해제
+    if (hitLocation) {
+      const dx = viewboxX - hitLocation.x;
+      const dy = viewboxY - hitLocation.y;
+      const distance = Math.sqrt(dx * dx + dy * dy);
+      if (distance < 20) {
+        onHitLocationSelect(null);
+        return;
+      }
+    }
+    
     onHitLocationSelect({ x: viewboxX, y: viewboxY });
   };
 
   return (
-    <div className="relative w-full max-w-[500px] aspect-square rounded-2xl overflow-hidden border border-white/10 bg-slate-950 shadow-2xl backdrop-blur-md">
-      {/* [고도화] 상단 전광판 UI 가이드 (이닝 및 실시간 공수 팀 뱃지 노출) */}
-      <div className="absolute top-4 left-4 right-4 z-10 flex justify-between items-center bg-slate-900/90 px-3.5 py-2.5 rounded-xl border border-white/10 text-xs backdrop-blur-sm">
-        <div className="text-slate-400 leading-relaxed font-semibold">
-          📢 <span className="text-emerald-400 font-bold">수비수</span> 드래그 시프트 조절<br/>
-          🏟️ <span className="text-amber-400 font-bold">필드</span> 클릭 타구 좌표 지정
-        </div>
-        {gameInfo && (
-          <div className="flex flex-col items-end gap-1.5 border-l border-white/10 pl-3.5">
-            <span className="text-[10px] text-emerald-400 font-extrabold font-mono tracking-wider">
-              🏟️ {gameInfo.stadium.split(' ')[0]} | {gameInfo.inning}회{gameInfo.inningHalf}
-            </span>
-            <div className="flex gap-1.5 text-[9px] font-bold">
-              <span className="bg-red-950/80 text-red-400 px-2 py-0.5 rounded border border-red-500/20 shadow-sm shadow-red-500/10">
-                🔥 공격: {attackingTeam}
-              </span>
-              <span className="bg-emerald-950/80 text-emerald-400 px-2 py-0.5 rounded border border-emerald-500/20 shadow-sm shadow-emerald-500/10">
-                🛡️ 수비: {defendingTeam}
-              </span>
-            </div>
-          </div>
-        )}
-      </div>
+    <div className="relative w-full h-full overflow-hidden bg-transparent">
+
 
       {/* 수비수 호버 툴팁 엘리먼트 */}
       {hoveredPlayer && (
@@ -238,6 +249,105 @@ const BaseballField = ({
           opacity="0.8"
         />
 
+        {/* [NEW] 홈런 및 파울 구역 시각화 오버레이 */}
+        {/* 파울 지역 (FOUL ZONE) - 좌측 세로 가이드라인 및 음영 */}
+        <line 
+          x1="65" 
+          y1="0" 
+          x2="65" 
+          y2="500" 
+          stroke="#f87171" 
+          strokeWidth="1.5" 
+          strokeDasharray="4,4" 
+          opacity="0.65" 
+        />
+        <rect 
+          x="0" 
+          y="0" 
+          width="65" 
+          height="500" 
+          fill="rgba(239, 68, 68, 0.015)" 
+          className="select-none pointer-events-none"
+        />
+        <text 
+          x="32" 
+          y="250" 
+          textAnchor="middle" 
+          fontSize="9" 
+          fontWeight="bold" 
+          fill="#f87171" 
+          opacity="0.6"
+          className="select-none pointer-events-none tracking-widest font-sans"
+          transform="rotate(-90, 32, 250)"
+        >
+          ❌ 파울 지역 (FOUL)
+        </text>
+
+        {/* 파울 지역 (FOUL ZONE) - 우측 세로 가이드라인 및 음영 */}
+        <line 
+          x1="435" 
+          y1="0" 
+          x2="435" 
+          y2="500" 
+          stroke="#f87171" 
+          strokeWidth="1.5" 
+          strokeDasharray="4,4" 
+          opacity="0.65" 
+        />
+        <rect 
+          x="435" 
+          y="0" 
+          width="65" 
+          height="500" 
+          fill="rgba(239, 68, 68, 0.015)" 
+          className="select-none pointer-events-none"
+        />
+        <text 
+          x="468" 
+          y="250" 
+          textAnchor="middle" 
+          fontSize="9" 
+          fontWeight="bold" 
+          fill="#f87171" 
+          opacity="0.6"
+          className="select-none pointer-events-none tracking-widest font-sans"
+          transform="rotate(90, 468, 250)"
+        >
+          ❌ 파울 지역 (FOUL)
+        </text>
+
+        {/* 홈런 구역 (HR ZONE) - 가로 가이드라인 및 음영 */}
+        <line 
+          x1="65" 
+          y1="45" 
+          x2="435" 
+          y2="45" 
+          stroke="#fbbf24" 
+          strokeWidth="2" 
+          strokeDasharray="5,3" 
+          opacity="0.8" 
+        />
+        <rect 
+          x="65" 
+          y="0" 
+          width="370" 
+          height="45" 
+          fill="rgba(245, 158, 11, 0.04)" 
+          className="select-none pointer-events-none"
+        />
+        <text 
+          x="250" 
+          y="28" 
+          textAnchor="middle" 
+          fontSize="9" 
+          fontWeight="bold" 
+          fill="#fbbf24" 
+          opacity="0.95"
+          className="select-none pointer-events-none tracking-widest font-sans"
+        >
+          🏆 홈런 구역 (HR ZONE)
+        </text>
+
         {/* 파울 라인 */}
         <line x1="250" y1="460" x2="35" y2="245" stroke="#ffffff" strokeWidth="2" opacity="0.6" />
         <line x1="250" y1="460" x2="465" y2="245" stroke="#ffffff" strokeWidth="2" opacity="0.6" />
@@ -305,6 +415,11 @@ const BaseballField = ({
           className="cursor-pointer transition-colors duration-200"
           onClick={(e) => { e.stopPropagation(); onRunnerToggle('third'); }}
         />
+
+        {/* 주자 이름 라벨 */}
+        {renderRunnerLabel(runners?.first, 405, 340)}
+        {renderRunnerLabel(runners?.second, 250, 215)}
+        {renderRunnerLabel(runners?.third, 95, 340)}
 
         {/* 타구 낙하지점 마커 */}
         {hitLocation && (
