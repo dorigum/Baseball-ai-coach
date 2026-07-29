@@ -349,6 +349,13 @@ const getStorageItem = (key, defaultValue) => {
   }
 };
 
+const teamLogos = {
+  'LG': '/lg_logo.jpg',
+  'LG 트윈스': '/lg_logo.jpg',
+  'KIA': '/kia_logo.jpg',
+  'KIA 타이거즈': '/kia_logo.jpg'
+};
+
 function App() {
   const [showTopButton, setShowTopButton] = useState(false);
   const [positions, setPositions] = useState(() => getStorageItem('baseball_positions', initialPositions));
@@ -1388,9 +1395,17 @@ function App() {
         <div className="w-full bg-slate-900/80 border border-white/10 p-5 rounded-2xl backdrop-blur-md shadow-2xl flex flex-col lg:flex-row items-center justify-between gap-6">
           {/* My Team Score */}
           <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-indigo-500 to-blue-600 flex items-center justify-center font-extrabold text-white text-xl shadow-lg shadow-indigo-500/20 font-mono">
-              {gameInfo.myTeam[0] || 'M'}
-            </div>
+            {teamLogos[gameInfo.myTeam] ? (
+              <img 
+                src={teamLogos[gameInfo.myTeam]} 
+                alt={`${gameInfo.myTeam} Logo`} 
+                className="w-12 h-12 rounded-xl object-cover border border-white/10 shadow-lg shadow-indigo-500/10"
+              />
+            ) : (
+              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-indigo-500 to-blue-600 flex items-center justify-center font-extrabold text-white text-xl shadow-lg shadow-indigo-500/20 font-mono">
+                {gameInfo.myTeam[0] || 'M'}
+              </div>
+            )}
             <div>
               <div className="text-[10px] text-slate-500 font-extrabold uppercase tracking-wider">우리 팀 (MY TEAM)</div>
               <div className="text-base font-black text-white">{gameInfo.myTeam}</div>
@@ -1454,9 +1469,17 @@ function App() {
               <div className="text-[10px] text-slate-500 font-extrabold uppercase tracking-wider">상대 팀 (OPPONENT)</div>
               <div className="text-base font-black text-white">{gameInfo.opponentTeam}</div>
             </div>
-            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-rose-500 to-red-600 flex items-center justify-center font-extrabold text-white text-xl shadow-lg shadow-rose-500/20 font-mono">
-              {gameInfo.opponentTeam[0] || 'O'}
-            </div>
+            {teamLogos[gameInfo.opponentTeam] ? (
+              <img 
+                src={teamLogos[gameInfo.opponentTeam]} 
+                alt={`${gameInfo.opponentTeam} Logo`} 
+                className="w-12 h-12 rounded-xl object-cover border border-white/10 shadow-lg shadow-rose-500/10"
+              />
+            ) : (
+              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-rose-500 to-red-600 flex items-center justify-center font-extrabold text-white text-xl shadow-lg shadow-rose-500/20 font-mono">
+                {gameInfo.opponentTeam[0] || 'O'}
+              </div>
+            )}
           </div>
         </div>
 
