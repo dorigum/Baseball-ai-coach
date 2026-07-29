@@ -9,6 +9,8 @@ frontend/npm-debug.log*
 frontend/yarn-debug.log*
 frontend/yarn-error.log*
 frontend/pnpm-debug.log*
+frontend/.firebase/
+frontend/.env
 
 # Backend ignore
 backend/.gradle/
@@ -23,3 +25,6 @@ backend/bin/
 backend/h2db/
 backend/*.log
 backend/src/main/resources/application-mysql.yml
+
+# Documentation / Tools ignore
+baseball_documents/.obsidian/

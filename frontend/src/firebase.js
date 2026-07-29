@@ -19,7 +19,13 @@ let isMockAuth = false;
 // 필수 키가 누락되었을 경우 Mock 인증 모드로 가동 (단, 개발 빌드 환경인 경우에만 허용)
 const isDev = import.meta.env.DEV;
 
-if (!firebaseConfig.apiKey || firebaseConfig.apiKey.trim() === "" || firebaseConfig.apiKey === "YOUR_API_KEY") {
+const requiredKeys = ["apiKey", "authDomain", "projectId", "appId"];
+const hasInvalidConfig = requiredKeys.some((key) => {
+  const value = firebaseConfig[key];
+  return !value || value.trim() === "" || value.startsWith("YOUR_");
+});
+
+if (hasInvalidConfig) {
   if (isDev) {
     console.warn("⚠️ [Firebase] Firebase API Key가 유효하지 않거나 설정되지 않았습니다.");
     console.warn("🚨 [Firebase] 프론트엔드가 'Mock 인증 모드'로 작동합니다. 소셜 로그인 버튼 클릭 시 가상 로그인이 수행됩니다.");

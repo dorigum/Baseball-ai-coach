@@ -405,11 +405,16 @@ function App() {
       });
       if (response.ok) {
         const memberData = await response.json();
-        if (memberData.myTeam && memberData.myTeam !== gameInfo.myTeam) {
-          setGameInfo(prev => ({
-            ...prev,
-            myTeam: memberData.myTeam
-          }));
+        if (memberData.myTeam) {
+          setGameInfo(prev => {
+            if (prev.myTeam !== memberData.myTeam) {
+              return {
+                ...prev,
+                myTeam: memberData.myTeam
+              };
+            }
+            return prev;
+          });
         }
       }
     } catch (err) {
@@ -435,7 +440,15 @@ function App() {
       // 내 프로필 및 동기화 실행
       await fetchMyProfile(authData.idToken, authData.user);
     } catch (err) {
-      showModal('🚨 로그인 실패', '소셜 로그인 처리에 실패하였습니다.', 'error');
+      console.error("소셜 로그인 에러:", err);
+      const isUserCancellation = err && (
+        err.code === 'auth/popup-closed-by-user' || 
+        err.code === 'auth/cancelled-popup-request' ||
+        (err.message && err.message.includes('popup-closed-by-user'))
+      );
+      if (!isUserCancellation) {
+        showModal('🚨 로그인 실패', '소셜 로그인 처리에 실패하였습니다.', 'error');
+      }
     }
   };
 
@@ -561,69 +574,67 @@ function App() {
     setCount({ balls: 0, strikes: 0, outs: 0 });
   }, [defendingTeam, attackingTeam]);
 
-  // [NEW] 내 선호 구단(myTeam)이 변경되었을 때 백엔드 회원 프로필 정보 동기화
+  // [NEW] 내 선호 구단(myTeam)이 변경되었을 때 백엔드 회원 프로필 정보 동기화 (디바운스 & 에러 제어 탑재)
   useEffect(() => {
-    if (idToken && gameInfo.myTeam) {
+    if (!idToken || !gameInfo.myTeam) return;
+
+    const delayDebounceId = setTimeout(() => {
       const updateMemberTeam = async () => {
         try {
           const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080';
-          await fetch(`${apiBaseUrl}/api/members/me/team`, {
+          
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 8000);
+
+          const response = await fetch(`${apiBaseUrl}/api/members/me/team`, {
             method: 'PUT',
             headers: {
               'Content-Type': 'application/json',
               'Authorization': `Bearer ${idToken}`,
               'X-Mock-UID': user?.uid || ''
             },
-            body: JSON.stringify({ myTeam: gameInfo.myTeam })
+            body: JSON.stringify({ myTeam: gameInfo.myTeam }),
+            signal: controller.signal
           });
+          clearTimeout(timeoutId);
+
+          if (!response.ok) {
+            console.error("선호 구단 정보 백엔드 동기화 실패 (HTTP status):", response.status);
+          }
         } catch (err) {
           console.error("선호 구단 정보 백엔드 동기화 실패:", err);
         }
       };
       updateMemberTeam();
-    }
-  }, [gameInfo.myTeam, idToken]);
+    }, 500); // 500ms 디바운스
 
-  // 로컬 스토리지 상태 저장 Effect들
+    return () => clearTimeout(delayDebounceId);
+  }, [gameInfo.myTeam, idToken, user?.uid]);
+
+  // 로컬 스토리지 상태 저장 Effect
   useEffect(() => {
     localStorage.setItem('baseball_positions', JSON.stringify(positions));
-  }, [positions]);
-
-  useEffect(() => {
     localStorage.setItem('baseball_runners', JSON.stringify(runners));
-  }, [runners]);
-
-  useEffect(() => {
     localStorage.setItem('baseball_count', JSON.stringify(count));
-  }, [count]);
-
-  useEffect(() => {
     localStorage.setItem('baseball_pitchLogs', JSON.stringify(pitchLogs));
-  }, [pitchLogs]);
-
-  useEffect(() => {
     localStorage.setItem('baseball_scores', JSON.stringify(scores));
-  }, [scores]);
-
-  useEffect(() => {
     localStorage.setItem('baseball_hitLocation', JSON.stringify(hitLocation));
-  }, [hitLocation]);
-
-  useEffect(() => {
     localStorage.setItem('baseball_gameInfo', JSON.stringify(gameInfo));
-  }, [gameInfo]);
-
-  useEffect(() => {
     localStorage.setItem('baseball_pitchInfo', JSON.stringify(pitchInfo));
-  }, [pitchInfo]);
-
-  useEffect(() => {
     localStorage.setItem('baseball_defenders', JSON.stringify(defenders));
-  }, [defenders]);
-
-  useEffect(() => {
     localStorage.setItem('baseball_battingOrder', JSON.stringify(battingOrder));
-  }, [battingOrder]);
+  }, [
+    positions,
+    runners,
+    count,
+    pitchLogs,
+    scores,
+    hitLocation,
+    gameInfo,
+    pitchInfo,
+    defenders,
+    battingOrder
+  ]);
 
   // 2. 투수 입력 폼의 투수명/투수팀이 변경될 때 수비진 P(투수)와도 실시간 연동
   useEffect(() => {
@@ -640,67 +651,66 @@ function App() {
 
   // [NEW] 우측 섹션 라인업 에디터에서 수비진 개별 선수명을 수동 수정할 때 연동하는 핸들러
   const handleDefenderUpdate = (position, newName, newTeam) => {
-    setDefenders((prev) => {
-      const updated = {
-        ...prev,
-        [position]: { name: newName, team: newTeam || prev[position].team }
-      };
-      
-      if (position === 'P') {
-        setPitchInfo((prevPitch) => ({
-          ...prevPitch,
-          pitcherName: newName,
-          pitcherTeam: newTeam || prev[position].team
-        }));
-      }
-      return updated;
-    });
+    const targetTeam = newTeam || defenders[position]?.team || '';
+    
+    setDefenders((prev) => ({
+      ...prev,
+      [position]: { name: newName, team: targetTeam }
+    }));
+    
+    if (position === 'P') {
+      setPitchInfo((prevPitch) => ({
+        ...prevPitch,
+        pitcherName: newName,
+        pitcherTeam: targetTeam
+      }));
+    }
   };
 
   // [NEW] 우측 섹션 라인업 에디터에서 수비진의 포지션을 변경할 때 두 수비수를 스왑하고 투수 교체를 연동하는 핸들러
   const handleDefenderPositionSwap = (posA, posB, newNameForA) => {
-    setDefenders((prev) => {
-      const playerA = { ...prev[posA], name: newNameForA };
-      const playerB = prev[posB];
-      
-      const updated = {
-        ...prev,
-        [posA]: playerB,
-        [posB]: playerA
-      };
-      
-      if (posA === 'P' || posB === 'P') {
-        const newPitcher = updated.P;
-        setPitchInfo((prevPitch) => ({
-          ...prevPitch,
-          pitcherName: newPitcher.name,
-          pitcherTeam: newPitcher.team
-        }));
-      }
-      return updated;
-    });
+    const playerA = { ...defenders[posA], name: newNameForA };
+    const playerB = defenders[posB];
+    
+    const updated = {
+      ...defenders,
+      [posA]: playerB,
+      [posB]: playerA
+    };
+    
+    setDefenders(updated);
+    
+    if (posA === 'P' || posB === 'P') {
+      const newPitcher = updated.P;
+      setPitchInfo((prevPitch) => ({
+        ...prevPitch,
+        pitcherName: newPitcher.name,
+        pitcherTeam: newPitcher.team
+      }));
+    }
   };
 
   // [NEW] 우측 타순 에디터에서 개별 타자명을 수동 수정할 때 연동하는 핸들러
   const handleBattingOrderUpdate = (index, newName, position) => {
+    const prevName = battingOrder[index]?.name;
+    const targetPos = position || battingOrder[index]?.position || '';
+
     setBattingOrder((prev) => {
       const updated = [...prev];
-      const prevName = updated[index].name;
       updated[index] = {
         ...updated[index],
         name: newName,
-        position: position || updated[index].position
+        position: targetPos
       };
-
-      // 만약 수정한 타자가 현재 타석의 타자 명과 같다면 입력 폼의 타자 정보도 동기화
-      if (pitchInfo.batterName === prevName) {
-        setPitchInfo((prevPitch) => ({
-          ...prevPitch,
-          batterName: newName
-        }));
-      }
       return updated;
     });
+
+    if (pitchInfo.batterName === prevName) {
+      setPitchInfo((prevPitch) => ({
+        ...prevPitch,
+        batterName: newName
+      }));
+    }
   };
 
   // 수비 위치 변경 핸들러
