@@ -12,6 +12,7 @@ const BaseballField = ({
   const svgRef = useRef(null);
   const [hoveredPlayer, setHoveredPlayer] = useState(null);
   const [tooltipPos, setTooltipPos] = useState({ x: 0, y: 0 });
+  const [hoveredField, setHoveredField] = useState(null);
 
 
 
@@ -138,6 +139,42 @@ const BaseballField = ({
     setHoveredPlayer(null);
   };
 
+  const handleFieldMouseMove = (e) => {
+    if (!svgRef.current) return;
+    const rect = svgRef.current.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    
+    const viewBoxX = Math.round((x / rect.width) * 500);
+    const viewBoxY = Math.round((y / rect.height) * 500);
+    
+    if (e.target.closest('.defender-badge') || e.target.closest('rect[transform]')) {
+      setHoveredField(null);
+      return;
+    }
+
+    let zone = '⚾ 페어 지역 (Fair)';
+    let color = '#34d399'; // emerald-400
+    if (viewBoxX < 65 || viewBoxX > 435) {
+      zone = '❌ 파울 지역 (Foul)';
+      color = '#f87171'; // red-400
+    } else if (viewBoxY < 45) {
+      zone = '🏆 홈런 지역 (Home Run)';
+      color = '#fbbf24'; // amber-400
+    }
+
+    setHoveredField({
+      x: viewBoxX,
+      y: viewBoxY,
+      zone,
+      color
+    });
+  };
+
+  const handleFieldMouseLeave = () => {
+    setHoveredField(null);
+  };
+
   // 필드 클릭 시 타구 위치 선택
   const handleFieldClick = (e) => {
     if (e.target.closest('.defender-badge')) {
@@ -197,6 +234,8 @@ const BaseballField = ({
         viewBox="0 0 500 500" 
         className="w-full h-full cursor-crosshair select-none"
         onClick={handleFieldClick}
+        onMouseMove={handleFieldMouseMove}
+        onMouseLeave={handleFieldMouseLeave}
       >
         <defs>
           <radialGradient id="fieldGrass" cx="50%" cy="95%" r="85%" fx="50%" fy="95%">
@@ -489,6 +528,76 @@ const BaseballField = ({
             </text>
           </g>
         ))}
+
+        {/* [NEW] 선택된 타구 낙하지점의 상세 KBO 판정 말풍선 */}
+        {hitLocation && (() => {
+          let zoneText = 'Fair (페어)';
+          let zoneColor = '#10b981'; // emerald-500
+          let zoneBg = 'rgba(15, 23, 42, 0.95)';
+          let zoneBorder = '#10b981';
+          if (hitLocation.x < 65 || hitLocation.x > 435) {
+            zoneText = 'Foul (파울)';
+            zoneColor = '#ef4444'; // red-500
+            zoneBorder = '#ef4444';
+          } else if (hitLocation.y < 45) {
+            zoneText = '🏆 Home Run (홈런)';
+            zoneColor = '#fbbf24'; // amber-500
+            zoneBorder = '#fbbf24';
+          }
+
+          return (
+            <g transform={`translate(${hitLocation.x}, ${hitLocation.y - 20})`} className="select-none pointer-events-none animate-bounce">
+              {/* 말풍선 핀 꼬리 */}
+              <polygon points="-4,2 4,2 0,6" fill={zoneBg} stroke={zoneColor} strokeWidth="1" />
+              {/* 말풍선 본체 */}
+              <rect 
+                x="-55" 
+                y="-14" 
+                width="110" 
+                height="17" 
+                rx="4" 
+                fill={zoneBg} 
+                stroke={zoneBorder} 
+                strokeWidth="1.5" 
+                filter="url(#neonPulse)"
+              />
+              <text 
+                x="0" 
+                y="-2" 
+                textAnchor="middle" 
+                fontSize="8.5" 
+                fontWeight="black" 
+                fill={zoneColor}
+              >
+                {zoneText}
+              </text>
+            </g>
+          );
+        })()}
+
+        {/* [NEW] 실시간 마우스 좌표 조준 가이드 및 조작 안내 패널 */}
+        <g transform="translate(10, 485)" className="select-none pointer-events-none">
+          {/* 가이드 바 배경 */}
+          <rect 
+            x="0" 
+            y="-12" 
+            width="480" 
+            height="20" 
+            rx="5" 
+            fill="rgba(15, 23, 42, 0.92)" 
+            stroke="rgba(255, 255, 255, 0.08)" 
+            strokeWidth="1.2" 
+          />
+          {hoveredField ? (
+            <text x="240" y="2" textAnchor="middle" fontSize="9.5" fontWeight="bold" fill="#ffffff" className="font-sans">
+              🎯 실시간 조준점 - X: <tspan fill="#38bdf8" fontWeight="black">{hoveredField.x}</tspan> Y: <tspan fill="#38bdf8" fontWeight="black">{hoveredField.y}</tspan> | 판정: <tspan fill={hoveredField.color} fontWeight="black">{hoveredField.zone}</tspan>
+            </text>
+          ) : (
+            <text x="240" y="2" textAnchor="middle" fontSize="9.5" fontWeight="bold" fill="#94a3b8" className="font-sans">
+              💡 가이드: 필드를 클릭해 <tspan fill="#fbbf24" fontWeight="black">타구 지점</tspan>을 지정하고, 수비수를 드래그해 이동시키세요.
+            </text>
+          )}
+        </g>
       </svg>
     </div>
   );
