@@ -7,8 +7,7 @@ const BaseballField = ({
   onRunnerToggle, 
   hitLocation, 
   onHitLocationSelect,
-  defenders = {},
-  gameInfo // [NEW] 실시간 경기 설정 정보 수용
+  defenders = {}
 }) => {
   const svgRef = useRef(null);
   const [hoveredPlayer, setHoveredPlayer] = useState(null);

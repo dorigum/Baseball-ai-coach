@@ -468,6 +468,7 @@ function App() {
       setRunners({ first: '', second: '', third: '' });
       setCount({ balls: 0, strikes: 0, outs: 0 });
     } catch (err) {
+      console.error("로그아웃 실패:", err);
       showModal('🚨 로그아웃 실패', '로그아웃 도중 에러가 발생했습니다.', 'error');
     }
   };
@@ -781,9 +782,7 @@ function App() {
 
   // 수비수 시프트 상태 텍스트로 요약
   const getShiftType = () => {
-    const diff1B = positions['1B'].x - initialPositions['1B'].x;
     const diff2B = positions['2B'].x - initialPositions['2B'].x;
-    const diff3B = positions['3B'].x - initialPositions['3B'].x;
     const diffSS = positions['SS'].x - initialPositions['SS'].x;
 
     if (diff2B < -40 && diffSS < -40) {
@@ -974,7 +973,7 @@ function App() {
       };
       syncAndFetch();
     }
-  }, [idToken]);
+  }, [idToken, user]);
 
   // [NEW] 수동 AI 전술 분석 실행 함수 (입력 정합성 검증 & AbortController 탑재)
   const handleTriggerAiAnalysis = async () => {
