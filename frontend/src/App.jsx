@@ -505,73 +505,84 @@ function App() {
   // [NEW] 공격 타순 라인업 상태 (현재 공격 팀의 기본 타순으로 연동)
   const [battingOrder, setBattingOrder] = useState(() => getStorageItem('baseball_battingOrder', teamBattingOrders.LG));
 
-  const isFirstRender = useRef(true);
+  const prevDefendingTeamRef = useRef(null);
+  const prevAttackingTeamRef = useRef(null);
 
   // 1. 수비 구단(defendingTeam) 및 공격 구단(attackingTeam)이 바뀔 때 기본 명단 자동 갱신
   useEffect(() => {
-    if (isFirstRender.current) {
-      isFirstRender.current = false;
-      // 로컬 스토리지에 기저 데이터가 적재되어 있다면 첫 기동 시 자동 교체를 건너뜁니다.
-      if (localStorage.getItem('baseball_defenders') || localStorage.getItem('baseball_battingOrder')) {
-        return;
+    const hasLocalData = localStorage.getItem('baseball_defenders') || localStorage.getItem('baseball_battingOrder');
+    
+    // 최초 마운트 시 로컬스토리지에 기존 값이 저장되어 있다면 덮어쓰기를 건너뜁니다.
+    if (hasLocalData && prevDefendingTeamRef.current === null && prevAttackingTeamRef.current === null) {
+      prevDefendingTeamRef.current = defendingTeam;
+      prevAttackingTeamRef.current = attackingTeam;
+      return;
+    }
+
+    const isDefendingTeamChanged = prevDefendingTeamRef.current !== null && prevDefendingTeamRef.current !== defendingTeam;
+    const isAttackingTeamChanged = prevAttackingTeamRef.current !== null && prevAttackingTeamRef.current !== attackingTeam;
+
+    prevDefendingTeamRef.current = defendingTeam;
+    prevAttackingTeamRef.current = attackingTeam;
+
+    if (!hasLocalData || isDefendingTeamChanged || isAttackingTeamChanged) {
+      const matchedLineup = teamLineups[defendingTeam];
+      const matchedOrder = teamBattingOrders[attackingTeam];
+
+      if (matchedLineup) {
+        setDefenders({ ...matchedLineup });
+      } else {
+        // 커스텀 구단일 때 기본 템플릿 생성
+        setDefenders({
+          P: { name: '투수', team: defendingTeam },
+          C: { name: '포수', team: defendingTeam },
+          '1B': { name: '1루수', team: defendingTeam },
+          '2B': { name: '2루수', team: defendingTeam },
+          '3B': { name: '3루수', team: defendingTeam },
+          SS: { name: '유격수', team: defendingTeam },
+          LF: { name: '좌익수', team: defendingTeam },
+          CF: { name: '중견수', team: defendingTeam },
+          RF: { name: '우익수', team: defendingTeam }
+        });
       }
-    }
-    const matchedLineup = teamLineups[defendingTeam];
-    const matchedOrder = teamBattingOrders[attackingTeam];
 
-    if (matchedLineup) {
-      setDefenders({ ...matchedLineup });
-    } else {
-      // 커스텀 구단일 때 기본 템플릿 생성
-      setDefenders({
-        P: { name: '투수', team: defendingTeam },
-        C: { name: '포수', team: defendingTeam },
-        '1B': { name: '1루수', team: defendingTeam },
-        '2B': { name: '2루수', team: defendingTeam },
-        '3B': { name: '3루수', team: defendingTeam },
-        SS: { name: '유격수', team: defendingTeam },
-        LF: { name: '좌익수', team: defendingTeam },
-        CF: { name: '중견수', team: defendingTeam },
-        RF: { name: '우익수', team: defendingTeam }
-      });
-    }
+      if (matchedOrder) {
+        setBattingOrder([...matchedOrder]);
+        // 투수(P)와 타자(Batter) 입력 폼 필드도 똑똑하게 기입 초기화
+        setPitchInfo((prev) => ({
+          ...prev,
+          pitcherName: matchedLineup ? matchedLineup.P.name : prev.pitcherName,
+          pitcherTeam: matchedLineup ? matchedLineup.P.team : prev.pitcherTeam,
+          batterName: matchedOrder[2]?.name || matchedOrder[0]?.name || prev.batterName, // KBO 대표 3번 타자로 초기 연동
+          batterTeam: attackingTeam
+        }));
+      } else {
+        // 커스텀 구단일 때 기본 템플릿 생성
+        const customOrder = [
+          { order: 1, name: '타자1', position: 'DH' },
+          { order: 2, name: '타자2', position: 'LF' },
+          { order: 3, name: '타자3', position: 'CF' },
+          { order: 4, name: '타자4', position: '1B' },
+          { order: 5, name: '타자5', position: '3B' },
+          { order: 6, name: '타자6', position: 'RF' },
+          { order: 7, name: '타자7', position: 'SS' },
+          { order: 8, name: '타자8', position: '2B' },
+          { order: 9, name: '타자9', position: 'C' }
+        ];
+        setBattingOrder(customOrder);
+        setPitchInfo((prev) => ({
+          ...prev,
+          pitcherName: matchedLineup ? matchedLineup.P.name : '투수',
+          pitcherTeam: defendingTeam,
+          batterName: '타자3',
+          batterTeam: attackingTeam
+        }));
+      }
 
-    if (matchedOrder) {
-      setBattingOrder([...matchedOrder]);
-      // 투수(P)와 타자(Batter) 입력 폼 필드도 똑똑하게 기입 초기화
-      setPitchInfo((prev) => ({
-        ...prev,
-        pitcherName: matchedLineup ? matchedLineup.P.name : prev.pitcherName,
-        pitcherTeam: matchedLineup ? matchedLineup.P.team : prev.pitcherTeam,
-        batterName: matchedOrder[2]?.name || matchedOrder[0]?.name || prev.batterName, // KBO 대표 3번 타자로 초기 연동
-        batterTeam: attackingTeam
-      }));
-    } else {
-      // 커스텀 구단일 때 기본 템플릿 생성
-      const customOrder = [
-        { order: 1, name: '타자1', position: 'DH' },
-        { order: 2, name: '타자2', position: 'LF' },
-        { order: 3, name: '타자3', position: 'CF' },
-        { order: 4, name: '타자4', position: '1B' },
-        { order: 5, name: '타자5', position: '3B' },
-        { order: 6, name: '타자6', position: 'RF' },
-        { order: 7, name: '타자7', position: 'SS' },
-        { order: 8, name: '타자8', position: '2B' },
-        { order: 9, name: '타자9', position: 'C' }
-      ];
-      setBattingOrder(customOrder);
-      setPitchInfo((prev) => ({
-        ...prev,
-        pitcherName: matchedLineup ? matchedLineup.P.name : '투수',
-        pitcherTeam: defendingTeam,
-        batterName: '타자3',
-        batterTeam: attackingTeam
-      }));
+      // [요구사항 반영] 팀 교대/변경 시 진루 정보(주자) 및 볼카운트 초기화
+      setRunners({ first: '', second: '', third: '' });
+      setCount({ balls: 0, strikes: 0, outs: 0 });
     }
-
-    // [요구사항 반영] 팀 교대/변경 시 진루 정보(주자) 및 볼카운트 초기화
-    setRunners({ first: '', second: '', third: '' });
-    setCount({ balls: 0, strikes: 0, outs: 0 });
   }, [defendingTeam, attackingTeam]);
 
   // [NEW] 내 선호 구단(myTeam)이 변경되었을 때 백엔드 회원 프로필 정보 동기화 (디바운스 & 에러 제어 탑재)
@@ -611,30 +622,46 @@ function App() {
     return () => clearTimeout(delayDebounceId);
   }, [gameInfo.myTeam, idToken, user?.uid]);
 
-  // 로컬 스토리지 상태 저장 Effect
+  // 로컬 스토리지 상태 저장 Effect들 (각 상태별 독립 분리하여 직렬화 병목 방지)
   useEffect(() => {
     localStorage.setItem('baseball_positions', JSON.stringify(positions));
+  }, [positions]);
+
+  useEffect(() => {
     localStorage.setItem('baseball_runners', JSON.stringify(runners));
+  }, [runners]);
+
+  useEffect(() => {
     localStorage.setItem('baseball_count', JSON.stringify(count));
+  }, [count]);
+
+  useEffect(() => {
     localStorage.setItem('baseball_pitchLogs', JSON.stringify(pitchLogs));
+  }, [pitchLogs]);
+
+  useEffect(() => {
     localStorage.setItem('baseball_scores', JSON.stringify(scores));
+  }, [scores]);
+
+  useEffect(() => {
     localStorage.setItem('baseball_hitLocation', JSON.stringify(hitLocation));
+  }, [hitLocation]);
+
+  useEffect(() => {
     localStorage.setItem('baseball_gameInfo', JSON.stringify(gameInfo));
+  }, [gameInfo]);
+
+  useEffect(() => {
     localStorage.setItem('baseball_pitchInfo', JSON.stringify(pitchInfo));
+  }, [pitchInfo]);
+
+  useEffect(() => {
     localStorage.setItem('baseball_defenders', JSON.stringify(defenders));
+  }, [defenders]);
+
+  useEffect(() => {
     localStorage.setItem('baseball_battingOrder', JSON.stringify(battingOrder));
-  }, [
-    positions,
-    runners,
-    count,
-    pitchLogs,
-    scores,
-    hitLocation,
-    gameInfo,
-    pitchInfo,
-    defenders,
-    battingOrder
-  ]);
+  }, [battingOrder]);
 
   // 2. 투수 입력 폼의 투수명/투수팀이 변경될 때 수비진 P(투수)와도 실시간 연동
   useEffect(() => {
@@ -671,17 +698,19 @@ function App() {
   const handleDefenderPositionSwap = (posA, posB, newNameForA) => {
     const playerA = { ...defenders[posA], name: newNameForA };
     const playerB = defenders[posB];
-    
-    const updated = {
-      ...defenders,
-      [posA]: playerB,
-      [posB]: playerA
-    };
-    
-    setDefenders(updated);
-    
-    if (posA === 'P' || posB === 'P') {
-      const newPitcher = updated.P;
+    const newPitcher = posA === 'P' ? playerB : (posB === 'P' ? playerA : null);
+
+    setDefenders((prev) => {
+      const pA = { ...prev[posA], name: newNameForA };
+      const pB = prev[posB];
+      return {
+        ...prev,
+        [posA]: pB,
+        [posB]: pA
+      };
+    });
+
+    if (newPitcher) {
       setPitchInfo((prevPitch) => ({
         ...prevPitch,
         pitcherName: newPitcher.name,
@@ -924,7 +953,7 @@ function App() {
             hitLocationY: logItem.hitLocation ? logItem.hitLocation.y : null,
             inning: logItem.gameInfo.inning,
             inningHalf: logItem.gameInfo.inningHalf,
-            outs: 0
+            outs: logItem.outs !== undefined ? logItem.outs : 0
           }),
           signal: controller.signal
         });
@@ -1066,22 +1095,6 @@ function App() {
       finalPlayResult = 'Walk';
     }
 
-    const newLog = {
-      id: `log-${Date.now()}`,
-      gameInfo: { ...gameInfo },
-      pitcherName: pitchInfo.pitcherName,
-      pitcherTeam: pitchInfo.pitcherTeam,
-      batterName: pitchInfo.batterName,
-      batterTeam: pitchInfo.batterTeam,
-      pitchType: pitchInfo.pitchType,
-      pitchSpeed: pitchInfo.pitchSpeed,
-      pitchResult: pitchInfo.pitchResult,
-      playResult: finalPlayResult,
-      hitLocation: pitchInfo.pitchResult === 'InPlay' ? hitLocation : null
-    };
-
-    setPitchLogs((prev) => [...prev, newLog]);
-
     let nextCount = { ...count };
     let nextRunners = { ...runners };
     let runsScored = 0;
@@ -1176,12 +1189,31 @@ function App() {
       showModal('🎉 득점 발생!', `${attackingTeam} 팀이 ${runsScored}점 득점하였습니다!`, 'info');
     }
 
+    // 3아웃 리셋 이전 시점의 아웃 카운트를 보존 기록
+    const recordedOuts = nextCount.outs;
+
     if (nextCount.outs >= 3) {
       nextCount = { balls: 0, strikes: 0, outs: 0 };
       nextRunners = { first: '', second: '', third: '' };
       showModal('🔄 3아웃 체인지', '공수가 교대되거나 다음 이닝으로 넘어갑니다.', 'info');
     }
 
+    const newLog = {
+      id: `log-${Date.now()}`,
+      gameInfo: { ...gameInfo },
+      pitcherName: pitchInfo.pitcherName,
+      pitcherTeam: pitchInfo.pitcherTeam,
+      batterName: pitchInfo.batterName,
+      batterTeam: pitchInfo.batterTeam,
+      pitchType: pitchInfo.pitchType,
+      pitchSpeed: pitchInfo.pitchSpeed,
+      pitchResult: pitchInfo.pitchResult,
+      playResult: finalPlayResult,
+      hitLocation: pitchInfo.pitchResult === 'InPlay' ? hitLocation : null,
+      outs: recordedOuts
+    };
+
+    setPitchLogs((prev) => [...prev, newLog]);
     setCount(nextCount);
     setRunners(nextRunners);
     setHitLocation(null);
@@ -1217,7 +1249,7 @@ function App() {
           hitLocationY: hitLocation ? hitLocation.y : null,
           inning: gameInfo.inning,
           inningHalf: gameInfo.inningHalf,
-          outs: nextCount.outs
+          outs: recordedOuts
         }),
         signal: controller.signal
       }).then(res => {
@@ -1242,7 +1274,19 @@ function App() {
 
   const handleResetGameData = () => {
     if (window.confirm('🚨 경기의 모든 데이터(점수, 투구 로그, 라인업 등)를 초기화하고 처음부터 다시 시작하시겠습니까?')) {
-      localStorage.clear();
+      const keysToRemove = [
+        'baseball_positions',
+        'baseball_runners',
+        'baseball_count',
+        'baseball_pitchLogs',
+        'baseball_scores',
+        'baseball_hitLocation',
+        'baseball_gameInfo',
+        'baseball_pitchInfo',
+        'baseball_defenders',
+        'baseball_battingOrder'
+      ];
+      keysToRemove.forEach(key => localStorage.removeItem(key));
       window.location.reload();
     }
   };
