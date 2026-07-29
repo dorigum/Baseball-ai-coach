@@ -268,7 +268,7 @@ const Dashboard = ({
                 onClick={() => !isEditing && handleStartBatterEdit(idx, batter.name, batter.position)}
               >
                 <div className="flex items-center justify-between">
-                  <span className="text-[9px] text-slate-500 font-extrabold uppercase font-mono">
+                  <span className="text-[10.5px] text-slate-400 font-black uppercase font-sans">
                     {idx + 1}번 ({batter.position})
                   </span>
                   {isCurrentBatter ? (
@@ -346,7 +346,7 @@ const Dashboard = ({
                 onClick={() => !isEditing && handleStartEdit(pos, info.name)}
               >
                 <div className="flex items-center justify-between">
-                  <span className="text-[9px] text-slate-500 font-extrabold uppercase font-mono">{pos} ({posLabels[pos]})</span>
+                  <span className="text-[10.5px] text-slate-400 font-black uppercase font-sans">{pos} ({posLabels[pos]})</span>
                   <span className="text-[8px] text-slate-500">✏️</span>
                 </div>
                 {isEditing ? (
