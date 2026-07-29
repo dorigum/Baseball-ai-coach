@@ -1,5 +1,9 @@
 @import "tailwindcss";
 
+body, button, input, select, textarea, text {
+  font-family: 'Noto Sans KR', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Apple SD Gothic Neo", "Malgun Gothic", "맑은 고딕", sans-serif !important;
+}
+
 /* Chrome, Safari, Edge에서 date input의 달력 아이콘을 흰색/밝은색으로 반전 */
 input[type="date"]::-webkit-calendar-picker-indicator {
   filter: invert(1);
