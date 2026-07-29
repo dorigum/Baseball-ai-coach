@@ -350,10 +350,55 @@ const getStorageItem = (key, defaultValue) => {
 };
 
 const teamLogos = {
-  'LG': '/lg_logo.jpg',
-  'LG 트윈스': '/lg_logo.jpg',
-  'KIA': '/kia_logo.jpg',
-  'KIA 타이거즈': '/kia_logo.jpg'
+  // LG 트윈스
+  'LG': 'https://upload.wikimedia.org/wikipedia/en/b/b2/LG_Twins_logo.svg',
+  'LG 트윈스': 'https://upload.wikimedia.org/wikipedia/en/b/b2/LG_Twins_logo.svg',
+  'LG Twins': 'https://upload.wikimedia.org/wikipedia/en/b/b2/LG_Twins_logo.svg',
+  
+  // KIA 타이거즈
+  'KIA': 'https://upload.wikimedia.org/wikipedia/ko/c/c9/Kia_Tigers_logo.svg',
+  'KIA 타이거즈': 'https://upload.wikimedia.org/wikipedia/ko/c/c9/Kia_Tigers_logo.svg',
+  'KIA Tigers': 'https://upload.wikimedia.org/wikipedia/ko/c/c9/Kia_Tigers_logo.svg',
+  
+  // 삼성 라이온즈
+  '삼성': 'https://upload.wikimedia.org/wikipedia/en/b/b7/Samsung_Lions_logo.svg',
+  '삼성 라이온즈': 'https://upload.wikimedia.org/wikipedia/en/b/b7/Samsung_Lions_logo.svg',
+  'Samsung Lions': 'https://upload.wikimedia.org/wikipedia/en/b/b7/Samsung_Lions_logo.svg',
+  
+  // 두산 베어스
+  '두산': 'https://upload.wikimedia.org/wikipedia/en/8/87/Doosan_Bears_logo.svg',
+  '두산 베어스': 'https://upload.wikimedia.org/wikipedia/en/8/87/Doosan_Bears_logo.svg',
+  'Doosan Bears': 'https://upload.wikimedia.org/wikipedia/en/8/87/Doosan_Bears_logo.svg',
+  
+  // 롯데 자이언츠
+  '롯데': 'https://upload.wikimedia.org/wikipedia/en/1/1d/Lotte_Giants_logo.svg',
+  '롯데 자이언츠': 'https://upload.wikimedia.org/wikipedia/en/1/1d/Lotte_Giants_logo.svg',
+  'Lotte Giants': 'https://upload.wikimedia.org/wikipedia/en/1/1d/Lotte_Giants_logo.svg',
+  
+  // 한화 이글스
+  '한화': 'https://upload.wikimedia.org/wikipedia/en/b/b6/Hanwha_Eagles_logo.svg',
+  '한화 이글스': 'https://upload.wikimedia.org/wikipedia/en/b/b6/Hanwha_Eagles_logo.svg',
+  'Hanwha Eagles': 'https://upload.wikimedia.org/wikipedia/en/b/b6/Hanwha_Eagles_logo.svg',
+  
+  // 키움 히어로즈
+  '키움': 'https://upload.wikimedia.org/wikipedia/en/c/cd/Kiwoom_Heroes_logo.svg',
+  '키움 히어로즈': 'https://upload.wikimedia.org/wikipedia/en/c/cd/Kiwoom_Heroes_logo.svg',
+  'Kiwoom Heroes': 'https://upload.wikimedia.org/wikipedia/en/c/cd/Kiwoom_Heroes_logo.svg',
+  
+  // SSG 랜더스
+  'SSG': 'https://upload.wikimedia.org/wikipedia/en/3/36/SSG_Landers_logo.svg',
+  'SSG 랜더스': 'https://upload.wikimedia.org/wikipedia/en/3/36/SSG_Landers_logo.svg',
+  'SSG Landers': 'https://upload.wikimedia.org/wikipedia/en/3/36/SSG_Landers_logo.svg',
+  
+  // KT 위즈
+  'KT': 'https://upload.wikimedia.org/wikipedia/en/c/ce/Kt_Wiz_logo.svg',
+  'KT 위즈': 'https://upload.wikimedia.org/wikipedia/en/c/ce/Kt_Wiz_logo.svg',
+  'kt wiz': 'https://upload.wikimedia.org/wikipedia/en/c/ce/Kt_Wiz_logo.svg',
+  
+  // NC 다이노스
+  'NC': 'https://upload.wikimedia.org/wikipedia/en/d/dd/NC_Dinos_logo.svg',
+  'NC 다이노스': 'https://upload.wikimedia.org/wikipedia/en/d/dd/NC_Dinos_logo.svg',
+  'NC Dinos': 'https://upload.wikimedia.org/wikipedia/en/d/dd/NC_Dinos_logo.svg'
 };
 
 function App() {
