@@ -1483,7 +1483,7 @@ function App() {
               </div>
             </div>
 
-            <div className="w-full aspect-square shrink-0 bg-slate-900/80 border border-white/10 p-16 rounded-2xl backdrop-blur-md shadow-2xl flex flex-col items-center justify-center overflow-hidden">
+            <div className="w-full aspect-square shrink-0 bg-slate-900/80 border border-white/10 p-6 rounded-2xl backdrop-blur-md shadow-2xl flex flex-col items-center justify-center overflow-hidden">
               <BaseballField
                 positions={positions}
                 onPositionChange={handlePositionChange}
