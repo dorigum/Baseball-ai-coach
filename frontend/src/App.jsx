@@ -1444,6 +1444,7 @@ function App() {
               <img 
                 src={teamLogos[gameInfo.myTeam]} 
                 alt={`${gameInfo.myTeam} Logo`} 
+                referrerPolicy="no-referrer"
                 className="w-12 h-12 rounded-xl object-cover border border-white/10 shadow-lg shadow-indigo-500/10"
               />
             ) : (
@@ -1518,6 +1519,7 @@ function App() {
               <img 
                 src={teamLogos[gameInfo.opponentTeam]} 
                 alt={`${gameInfo.opponentTeam} Logo`} 
+                referrerPolicy="no-referrer"
                 className="w-12 h-12 rounded-xl object-cover border border-white/10 shadow-lg shadow-rose-500/10"
               />
             ) : (
