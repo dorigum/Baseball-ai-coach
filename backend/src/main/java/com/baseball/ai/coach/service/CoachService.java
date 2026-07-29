@@ -6,8 +6,10 @@ import com.baseball.ai.coach.dto.DashboardResponseDto;
 import com.baseball.ai.coach.dto.PitchRecordRequestDto;
 import com.baseball.ai.coach.repository.*;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -30,7 +32,7 @@ public class CoachService {
         // 1. Game 조회 또는 생성 (MemberContext에서 회원을 확인하여 연동)
         Member currentMember = MemberContext.getMember();
         if (currentMember == null) {
-            throw new IllegalArgumentException("인증된 사용자만 기록을 저장할 수 있습니다.");
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "인증된 사용자만 기록을 저장할 수 있습니다.");
         }
         Game game = gameRepository.findByGameDateAndMemberUid(dto.getGameDate(), currentMember.getUid()).stream()
                 .filter(g -> g.getStadium().equals(dto.getStadium())
@@ -134,7 +136,7 @@ public class CoachService {
     public DashboardResponseDto getDashboardData(Long gameId) {
         Member currentMember = MemberContext.getMember();
         if (currentMember == null) {
-            throw new IllegalArgumentException("인증된 사용자만 대시보드를 조회할 수 있습니다.");
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "인증된 사용자만 대시보드를 조회할 수 있습니다.");
         }
         List<PitchRecord> records;
         
